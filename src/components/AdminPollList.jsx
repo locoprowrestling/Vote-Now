@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { supabaseAdmin } from '../lib/supabaseClient'
 import { useVoteCounts } from '../hooks/useVoteCounts'
+import AdminPollForm from './AdminPollForm'
 
 function PollRow({ poll, onRefetch }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
   const { counts } = useVoteCounts(poll.id)
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
+  const [editing, setEditing] = useState(false)
 
   async function toggleStatus() {
     const newStatus = poll.status === 'open' ? 'closed' : 'open'
@@ -16,6 +19,41 @@ function PollRow({ poll, onRefetch }) {
     if (!confirm(`Delete "${poll.title}"? This cannot be undone.`)) return
     await supabaseAdmin.from('polls').delete().eq('id', poll.id)
     onRefetch()
+  }
+
+  async function copyPoll() {
+    const { data: newPoll, error: pollError } = await supabaseAdmin
+      .from('polls')
+      .insert({
+        title: poll.title + ' (Copy)',
+        description: poll.description || null,
+        type: poll.type,
+        status: 'closed',
+      })
+      .select()
+      .single()
+
+    if (pollError) return
+
+    const optionRows = options.map((o, i) => ({
+      poll_id: newPoll.id,
+      label: o.label,
+      emoji: o.emoji || null,
+      sort_order: i,
+    }))
+
+    await supabaseAdmin.from('options').insert(optionRows)
+    onRefetch()
+  }
+
+  if (editing) {
+    return (
+      <AdminPollForm
+        initialPoll={poll}
+        onCreated={() => { setEditing(false); onRefetch() }}
+        onCancel={() => setEditing(false)}
+      />
+    )
   }
 
   return (
@@ -76,10 +114,22 @@ function PollRow({ poll, onRefetch }) {
           {poll.status === 'open' ? 'Close Voting' : 'Open Voting'}
         </button>
         <button
-          onClick={deletePoll}
-          className="px-4 py-2.5 bg-gray-800 hover:bg-red-900/50 border border-gray-700 hover:border-red-700 text-gray-400 hover:text-red-400 rounded-xl text-sm transition-all active:scale-[0.98]"
+          onClick={() => setEditing(true)}
+          className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 rounded-xl text-sm transition-all active:scale-[0.98]"
         >
-          Delete
+          Edit
+        </button>
+        <button
+          onClick={copyPoll}
+          className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 rounded-xl text-sm transition-all active:scale-[0.98]"
+        >
+          Copy
+        </button>
+        <button
+          onClick={deletePoll}
+          className="px-3 py-2.5 bg-gray-800 hover:bg-red-900/50 border border-gray-700 hover:border-red-700 text-gray-500 hover:text-red-400 rounded-xl text-sm transition-all active:scale-[0.98]"
+        >
+          ✕
         </button>
       </div>
     </div>

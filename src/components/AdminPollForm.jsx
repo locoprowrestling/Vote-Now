@@ -15,14 +15,20 @@ const DEFAULT_REACTION_OPTIONS = [
   { label: 'Boo', emoji: '👎' },
 ]
 
-export default function AdminPollForm({ onCreated, onCancel }) {
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [type, setType] = useState('prediction')
-  const [options, setOptions] = useState([
-    { label: '', emoji: '' },
-    { label: '', emoji: '' },
-  ])
+export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
+  const isEditing = !!initialPoll
+
+  const [title, setTitle] = useState(initialPoll?.title || '')
+  const [description, setDescription] = useState(initialPoll?.description || '')
+  const [type, setType] = useState(initialPoll?.type || 'prediction')
+  const [options, setOptions] = useState(() => {
+    if (initialPoll?.options?.length) {
+      return [...initialPoll.options]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(o => ({ label: o.label, emoji: o.emoji || '' }))
+    }
+    return [{ label: '', emoji: '' }, { label: '', emoji: '' }]
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -67,31 +73,71 @@ export default function AdminPollForm({ onCreated, onCancel }) {
 
     setSubmitting(true)
 
-    const { data: poll, error: pollError } = await supabaseAdmin
-      .from('polls')
-      .insert({ title: title.trim(), description: description.trim() || null, type, status: 'closed' })
-      .select()
-      .single()
+    if (isEditing) {
+      // Update poll fields
+      const { error: pollError } = await supabaseAdmin
+        .from('polls')
+        .update({ title: title.trim(), description: description.trim() || null, type })
+        .eq('id', initialPoll.id)
 
-    if (pollError) {
-      setError(pollError.message)
-      setSubmitting(false)
-      return
-    }
+      if (pollError) {
+        setError(pollError.message)
+        setSubmitting(false)
+        return
+      }
 
-    const optionRows = validOptions.map((o, i) => ({
-      poll_id: poll.id,
-      label: o.label.trim(),
-      emoji: o.emoji.trim() || null,
-      sort_order: i,
-    }))
+      // Replace all options: delete existing, insert new
+      const { error: delError } = await supabaseAdmin
+        .from('options')
+        .delete()
+        .eq('poll_id', initialPoll.id)
 
-    const { error: optError } = await supabaseAdmin.from('options').insert(optionRows)
+      if (delError) {
+        setError(delError.message)
+        setSubmitting(false)
+        return
+      }
 
-    if (optError) {
-      setError(optError.message)
-      setSubmitting(false)
-      return
+      const optionRows = validOptions.map((o, i) => ({
+        poll_id: initialPoll.id,
+        label: o.label.trim(),
+        emoji: o.emoji?.trim() || null,
+        sort_order: i,
+      }))
+
+      const { error: optError } = await supabaseAdmin.from('options').insert(optionRows)
+      if (optError) {
+        setError(optError.message)
+        setSubmitting(false)
+        return
+      }
+    } else {
+      // Create new poll
+      const { data: poll, error: pollError } = await supabaseAdmin
+        .from('polls')
+        .insert({ title: title.trim(), description: description.trim() || null, type, status: 'closed' })
+        .select()
+        .single()
+
+      if (pollError) {
+        setError(pollError.message)
+        setSubmitting(false)
+        return
+      }
+
+      const optionRows = validOptions.map((o, i) => ({
+        poll_id: poll.id,
+        label: o.label.trim(),
+        emoji: o.emoji?.trim() || null,
+        sort_order: i,
+      }))
+
+      const { error: optError } = await supabaseAdmin.from('options').insert(optionRows)
+      if (optError) {
+        setError(optError.message)
+        setSubmitting(false)
+        return
+      }
     }
 
     setSubmitting(false)
@@ -105,7 +151,9 @@ export default function AdminPollForm({ onCreated, onCancel }) {
       onSubmit={handleSubmit}
       className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-4"
     >
-      <h3 className="text-white font-bold text-lg mb-4">New Poll</h3>
+      <h3 className="text-white font-bold text-lg mb-4">
+        {isEditing ? 'Edit Poll' : 'New Poll'}
+      </h3>
 
       <div className="space-y-3">
         {/* Type */}
@@ -135,7 +183,7 @@ export default function AdminPollForm({ onCreated, onCancel }) {
           />
         </div>
 
-        {/* Description (optional) */}
+        {/* Description */}
         <div>
           <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">
             Description <span className="normal-case text-gray-600">(optional)</span>
@@ -212,7 +260,7 @@ export default function AdminPollForm({ onCreated, onCancel }) {
           disabled={submitting}
           className="flex-1 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all disabled:opacity-50"
         >
-          {submitting ? 'Creating...' : 'Create Poll'}
+          {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Poll'}
         </button>
         <button
           type="button"
