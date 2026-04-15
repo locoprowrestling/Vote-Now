@@ -1,4 +1,7 @@
 const SESSION_KEY = 'vote_session_id'
+const MAILING_LIST_JOINED_KEY = 'vote-now:mailing-list-joined'
+const MAILING_LIST_EMAIL_KEY = 'vote-now:mailing-list-email'
+const MAILING_LIST_OPT_IN_KEY = 'vote-now:mailing-list-opt-in'
 
 // In-memory fallback when localStorage is unavailable (e.g. browser blocks all cookies)
 const memStore = new Map()
@@ -16,6 +19,14 @@ function storageSet(key, value) {
     localStorage.setItem(key, value)
   } catch {
     memStore.set(key, value)
+  }
+}
+
+function storageRemove(key) {
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    memStore.delete(key)
   }
 }
 
@@ -37,9 +48,28 @@ export function recordVote(pollId) {
 }
 
 export function hasSubmittedEmail() {
-  return !!storageGet('vote-now:mailing-list-joined')
+  return !!getSubmittedEmail()
 }
 
-export function recordEmailSubmitted() {
-  storageSet('vote-now:mailing-list-joined', 'true')
+export function getSubmittedEmail() {
+  return (storageGet(MAILING_LIST_EMAIL_KEY) || '').trim()
+}
+
+export function getSubmittedMailingListPreference() {
+  return storageGet(MAILING_LIST_OPT_IN_KEY) !== 'false'
+}
+
+export function recordEmailSubmitted(email, mailingList) {
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+  if (!normalizedEmail) return
+
+  storageSet(MAILING_LIST_JOINED_KEY, 'true')
+  storageSet(MAILING_LIST_EMAIL_KEY, normalizedEmail)
+  storageSet(MAILING_LIST_OPT_IN_KEY, mailingList ? 'true' : 'false')
+}
+
+export function clearEmailSubmitted() {
+  storageRemove(MAILING_LIST_JOINED_KEY)
+  storageRemove(MAILING_LIST_EMAIL_KEY)
+  storageRemove(MAILING_LIST_OPT_IN_KEY)
 }

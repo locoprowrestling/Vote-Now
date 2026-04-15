@@ -28,6 +28,14 @@ export async function submitVote(poll_id, option_id, session_id, turnstileToken)
   return data
 }
 
+export async function submitMailingListSignup(session_id, email, mailing_list) {
+  const { data, error } = await supabase.functions.invoke('submit-email', {
+    body: { session_id, email, mailing_list },
+  })
+  if (error) throw error
+  return data
+}
+
 export async function adminAction(action, payload = {}) {
   const { data, error } = await supabase.functions.invoke('admin-action', {
     body: {
