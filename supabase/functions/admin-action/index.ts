@@ -5,19 +5,97 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const ADMIN_TOKEN_TTL_MS = 1000 * 60 * 60 * 12
+
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('')
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+function base64UrlToBytes(value: string) {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')
+  const binary = atob(padded)
+  return Uint8Array.from(binary, char => char.charCodeAt(0))
+}
+
+async function importSigningKey(secret: string) {
+  return crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
+}
+
+async function createAdminToken(secret: string) {
+  const payloadBytes = encoder.encode(JSON.stringify({
+    exp: Date.now() + ADMIN_TOKEN_TTL_MS,
+  }))
+  const key = await importSigningKey(secret)
+  const signature = await crypto.subtle.sign('HMAC', key, payloadBytes)
+
+  return `${bytesToBase64Url(payloadBytes)}.${bytesToBase64Url(new Uint8Array(signature))}`
+}
+
+async function verifyAdminToken(token: string, secret: string) {
+  try {
+    const [payloadPart, signaturePart] = token.split('.')
+    if (!payloadPart || !signaturePart) return false
+
+    const payloadBytes = base64UrlToBytes(payloadPart)
+    const signatureBytes = base64UrlToBytes(signaturePart)
+    const key = await importSigningKey(secret)
+    const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, payloadBytes)
+    if (!valid) return false
+
+    const payload = JSON.parse(decoder.decode(payloadBytes))
+    return typeof payload?.exp === 'number' && payload.exp > Date.now()
+  } catch {
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { adminPassword, action, payload } = await req.json()
+    const { adminPassword, adminToken, action, payload } = await req.json()
 
-    // Validate password server-side — service key never leaves this function
     const expectedPassword = Deno.env.get('ADMIN_PASSWORD')
-    if (!expectedPassword || adminPassword !== expectedPassword) {
+    const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET') || expectedPassword || ''
+
+    if (!expectedPassword) {
+      return new Response(JSON.stringify({ error: 'Admin password is not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const passwordMatches = adminPassword === expectedPassword
+    const tokenMatches = Boolean(adminToken) && await verifyAdminToken(adminToken, sessionSecret)
+
+    if (!passwordMatches && !tokenMatches) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    let result
+
+    if (action === 'verify_admin') {
+      result = {
+        success: true,
+        adminToken: await createAdminToken(sessionSecret),
+      }
+
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -26,8 +104,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-
-    let result
 
     if (action === 'create_poll') {
       const { title, description, type, options } = payload

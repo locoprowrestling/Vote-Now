@@ -12,9 +12,9 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder'
 )
 
-// Set by PasswordGate on successful login so Edge Function calls use the
-// same password the admin typed, not a potentially-mismatched build env var.
-let _adminPassword = ''
+// Set by PasswordGate after server-side verification so admin actions use a
+// short-lived token instead of a password bundled into the frontend.
+let _adminToken = ''
 let _submitEmailFunctionAvailable = true
 
 function isDuplicateMailingListSignupError(error, status) {
@@ -28,8 +28,23 @@ function isDuplicateMailingListSignupError(error, status) {
   )
 }
 
-export function setAdminPassword(pw) {
-  _adminPassword = pw
+export function clearAdminAuth() {
+  _adminToken = ''
+}
+
+export async function verifyAdminPassword(password) {
+  const { data, error } = await supabase.functions.invoke('admin-action', {
+    body: {
+      adminPassword: password,
+      action: 'verify_admin',
+    },
+  })
+
+  if (error) throw error
+  if (!data?.adminToken) throw new Error('Admin token was not returned')
+
+  _adminToken = data.adminToken
+  return data
 }
 
 export async function submitVote(poll_id, option_id, session_id, turnstileToken) {
@@ -77,7 +92,7 @@ export async function submitMailingListSignup(session_id, email, mailing_list) {
 export async function adminAction(action, payload = {}) {
   const { data, error } = await supabase.functions.invoke('admin-action', {
     body: {
-      adminPassword: _adminPassword,
+      adminToken: _adminToken,
       action,
       payload,
     },

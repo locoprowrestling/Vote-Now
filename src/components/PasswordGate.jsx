@@ -1,25 +1,38 @@
 import { useState } from 'react'
-import { setAdminPassword } from '../lib/supabaseClient'
+import { clearAdminAuth, verifyAdminPassword } from '../lib/supabaseClient'
 
 export default function PasswordGate({ children }) {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault()
-    if (password === import.meta.env.VITE_ADMIN_PASSWORD) {
-      setAdminPassword(password)
+
+    try {
+      setLoading(true)
+      setError(null)
+      await verifyAdminPassword(password)
       setAuthed(true)
-    } else {
-      setError('Incorrect password')
       setPassword('')
+    } catch (err) {
+      if (err?.context?.status === 401 || err?.message?.includes('Unauthorized')) {
+        setError('Incorrect password')
+      } else {
+        setError('Unable to sign in. Try again.')
+      }
+      setPassword('')
+    } finally {
+      setLoading(false)
     }
   }
 
   function handleSignOut() {
+    clearAdminAuth()
     setAuthed(false)
     setPassword('')
+    setError(null)
   }
 
   if (authed) return children({ onSignOut: handleSignOut })
@@ -55,9 +68,10 @@ export default function PasswordGate({ children }) {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
+            disabled={loading}
             className="w-full bg-loco-purple hover:bg-loco-purple-dark active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all border border-loco-purple"
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>

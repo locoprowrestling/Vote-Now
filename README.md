@@ -19,13 +19,26 @@ Fan voting app for live events. Fans vote on their phones, results update in rea
 
 ```bash
 cp .env.example .env.local
-# Fill in your Supabase values and pick an admin password
+# Fill in your Supabase values
 npm install
 npm run dev
 ```
 
 Fan page: http://localhost:5173/Vote-Now/
 Admin: http://localhost:5173/Vote-Now/#/admin
+
+Set the admin password in the Supabase Edge Function environment, not in the frontend:
+
+- `ADMIN_PASSWORD`: required for the `admin-action` function
+- `ADMIN_SESSION_SECRET`: optional signing secret for short-lived admin session tokens
+- `SUPABASE_SERVICE_ROLE_KEY`: required by the Edge Functions for admin writes
+
+Deploy the Edge Functions after setting secrets:
+
+```bash
+supabase functions deploy admin-action
+supabase functions deploy submit-email
+```
 
 ### 3. GitHub Deployment
 
@@ -35,8 +48,7 @@ Add these **repository secrets** in GitHub → Settings → Secrets → Actions:
 |--------|-------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
-| `VITE_SUPABASE_SERVICE_KEY` | Your Supabase service_role key |
-| `VITE_ADMIN_PASSWORD` | Password to access the admin panel |
+| `VITE_TURNSTILE_SITE_KEY` | Your Cloudflare Turnstile site key |
 
 Then enable **GitHub Pages** in repo Settings → Pages:
 - Source: **Deploy from a branch**
