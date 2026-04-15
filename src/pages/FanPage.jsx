@@ -8,10 +8,12 @@ export default function FanPage() {
     <div className="min-h-screen bg-loco-purple-dark px-4 pb-10">
       {/* Header */}
       <div className="text-center py-6 border-b border-loco-purple mb-6">
-        <div className="text-loco-gold font-black text-2xl tracking-tight uppercase">
-          LoCo Pro Wrestling
-        </div>
-        <div className="text-loco-light/60 text-sm mt-1 tracking-widest uppercase">
+        <img
+          src="img/LoCoPro Primary Mark.png"
+          alt="LoCo Pro Wrestling"
+          className="mx-auto h-20 w-auto object-contain"
+        />
+        <div className="text-loco-light/60 text-sm mt-3 tracking-widest uppercase">
           Live Fan Vote
         </div>
       </div>
