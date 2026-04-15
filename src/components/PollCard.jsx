@@ -3,6 +3,7 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { submitVote } from '../lib/supabaseClient'
 import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
 import { useVoteCounts } from '../hooks/useVoteCounts'
+import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import ResultsBar from './ResultsBar'
 
 export default function PollCard({ poll }) {
@@ -14,6 +15,7 @@ export default function PollCard({ poll }) {
   const { counts } = useVoteCounts(poll.id, voteResetCount)
   const turnstileRef = useRef(null)
   const [cfToken, setCfToken] = useState(null)
+  const { secondsLeft, expired } = useCountdown(poll.closes_at || null)
 
   useEffect(() => {
     setVoted(hasVoted(poll.id, voteResetCount))
@@ -56,6 +58,7 @@ export default function PollCard({ poll }) {
   }
 
   const isReaction = poll.type === 'reaction'
+  const votingBlocked = voted || expired
 
   return (
     <div className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-5 mb-4">
@@ -72,6 +75,11 @@ export default function PollCard({ poll }) {
       {poll.description && (
         <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
       )}
+      {secondsLeft !== null && (
+        <p className={`text-xs font-mono mb-2 ${expired ? 'text-red-400' : 'text-loco-gold/80'}`}>
+          {expired ? 'Voting closed' : `Voting closes in ${formatCountdown(secondsLeft)}`}
+        </p>
+      )}
 
       <Turnstile
         ref={turnstileRef}
@@ -87,13 +95,15 @@ export default function PollCard({ poll }) {
           </div>
           <ResultsBar options={options} counts={counts} />
         </>
+      ) : expired ? (
+        <div className="text-sm text-loco-light/40 mt-3 text-center">Voting has closed.</div>
       ) : isReaction ? (
         <div className="flex flex-wrap gap-3 justify-center mt-3">
           {options.map(option => (
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
-              disabled={!!submitting}
+              disabled={!!submitting || votingBlocked}
               className="flex flex-col items-center gap-1 bg-loco-purple-dark hover:bg-loco-purple active:scale-95 rounded-2xl px-5 py-4 transition-all disabled:opacity-50 min-w-[72px] border border-loco-purple hover:border-loco-gold"
             >
               <span className="text-3xl">{option.emoji || option.label}</span>
@@ -107,7 +117,7 @@ export default function PollCard({ poll }) {
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
-              disabled={!!submitting}
+              disabled={!!submitting || votingBlocked}
               className="w-full text-left bg-loco-purple-dark hover:bg-loco-purple/60 border border-loco-purple hover:border-loco-gold active:scale-[0.98] rounded-xl px-4 py-4 text-white font-medium transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {submitting === option.id ? (

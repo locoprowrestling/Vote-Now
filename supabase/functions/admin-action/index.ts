@@ -106,10 +106,10 @@ Deno.serve(async (req) => {
     )
 
     if (action === 'create_poll') {
-      const { title, description, type, options } = payload
+      const { title, description, type, options, closesAt } = payload
       const { data: poll, error } = await supabase
         .from('polls')
-        .insert({ title, description: description || null, type, status: 'closed' })
+        .insert({ title, description: description || null, type, status: 'closed', closes_at: closesAt || null })
         .select()
         .single()
       if (error) throw error
@@ -125,10 +125,10 @@ Deno.serve(async (req) => {
       result = poll
 
     } else if (action === 'update_poll') {
-      const { pollId, title, description, type, options } = payload
+      const { pollId, title, description, type, options, closesAt } = payload
       const { error } = await supabase
         .from('polls')
-        .update({ title, description: description || null, type })
+        .update({ title, description: description || null, type, closes_at: closesAt || null })
         .eq('id', pollId)
       if (error) throw error
 
@@ -146,8 +146,14 @@ Deno.serve(async (req) => {
       result = { success: true }
 
     } else if (action === 'toggle_status') {
-      const { pollId, status } = payload
-      const { error } = await supabase.from('polls').update({ status }).eq('id', pollId)
+      const { pollId, status, closesAt } = payload
+      const update: Record<string, unknown> = { status }
+      if (status === 'open') {
+        update.closes_at = closesAt || null
+      } else {
+        update.closes_at = null
+      }
+      const { error } = await supabase.from('polls').update(update).eq('id', pollId)
       if (error) throw error
       result = { success: true }
 

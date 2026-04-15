@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { adminAction } from '../lib/supabaseClient'
 import { useVoteCounts } from '../hooks/useVoteCounts'
+import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import AdminPollForm from './AdminPollForm'
 
 function PollRow({ poll, onRefetch }) {
@@ -9,9 +10,44 @@ function PollRow({ poll, onRefetch }) {
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
   const [editing, setEditing] = useState(false)
 
-  async function toggleStatus() {
-    const newStatus = poll.status === 'open' ? 'closed' : 'open'
-    await adminAction('toggle_status', { pollId: poll.id, status: newStatus })
+  // Timer panel state (shown when admin taps "Open Voting")
+  const [openingWithTimer, setOpeningWithTimer] = useState(false)
+  const [timerMode, setTimerMode] = useState('none')
+  const [durationMin, setDurationMin] = useState(2)
+  const [durationSec, setDurationSec] = useState(0)
+  const [specificTime, setSpecificTime] = useState('')
+
+  // Countdown for open timed polls
+  const { secondsLeft, expired } = useCountdown(poll.status === 'open' ? poll.closes_at : null)
+
+  // Auto-close when countdown expires
+  useEffect(() => {
+    if (poll.status !== 'open' || !poll.closes_at) return
+    const ms = new Date(poll.closes_at) - Date.now()
+    if (ms <= 0) return
+    const id = setTimeout(async () => {
+      await adminAction('toggle_status', { pollId: poll.id, status: 'closed' })
+      onRefetch()
+    }, ms)
+    return () => clearTimeout(id)
+  }, [poll.closes_at, poll.status, poll.id])
+
+  async function closeVoting() {
+    await adminAction('toggle_status', { pollId: poll.id, status: 'closed' })
+    onRefetch()
+  }
+
+  async function openVoting() {
+    let closesAt = null
+    if (timerMode === 'duration') {
+      const totalSec = durationMin * 60 + Number(durationSec)
+      if (totalSec > 0) closesAt = new Date(Date.now() + totalSec * 1000).toISOString()
+    } else if (timerMode === 'specific' && specificTime) {
+      closesAt = new Date(specificTime).toISOString()
+    }
+    await adminAction('toggle_status', { pollId: poll.id, status: 'open', closesAt })
+    setOpeningWithTimer(false)
+    setTimerMode('none')
     onRefetch()
   }
 
@@ -30,6 +66,8 @@ function PollRow({ poll, onRefetch }) {
     await adminAction('copy_poll', { pollId: poll.id })
     onRefetch()
   }
+
+  const inputClass = "bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2 text-white focus:outline-none focus:border-loco-gold transition-colors text-sm"
 
   if (editing) {
     return (
@@ -56,6 +94,13 @@ function PollRow({ poll, onRefetch }) {
             >
               {poll.status === 'open' ? 'LIVE' : 'CLOSED'}
             </span>
+            {poll.status === 'open' && secondsLeft !== null && (
+              <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                expired ? 'bg-red-900/40 text-red-400' : 'bg-loco-purple text-loco-gold'
+              }`}>
+                {expired ? 'Closing...' : `⏱ ${formatCountdown(secondsLeft)}`}
+              </span>
+            )}
             <span className="text-xs text-loco-light/40 uppercase tracking-wide">
               {poll.type}
             </span>
@@ -87,10 +132,80 @@ function PollRow({ poll, onRefetch }) {
         })}
       </div>
 
+      {/* Inline timer panel (shown when opening) */}
+      {openingWithTimer && (
+        <div className="mt-3 bg-loco-purple-dark border border-loco-purple rounded-xl p-3 space-y-2">
+          <p className="text-xs text-loco-light/50 uppercase tracking-wider">Timer (optional)</p>
+          <div className="space-y-1.5">
+            {[
+              { value: 'none', label: 'No timer' },
+              { value: 'duration', label: 'Duration' },
+              { value: 'specific', label: 'Close at' },
+            ].map(opt => (
+              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`timer-${poll.id}`}
+                  value={opt.value}
+                  checked={timerMode === opt.value}
+                  onChange={() => setTimerMode(opt.value)}
+                  className="accent-loco-gold"
+                />
+                <span className="text-sm text-loco-light/80">{opt.label}</span>
+                {opt.value === 'duration' && timerMode === 'duration' && (
+                  <span className="flex items-center gap-1 ml-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={durationMin}
+                      onChange={e => setDurationMin(Number(e.target.value))}
+                      className={`${inputClass} w-14 text-center`}
+                    />
+                    <span className="text-xs text-loco-light/40">min</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={durationSec}
+                      onChange={e => setDurationSec(Number(e.target.value))}
+                      className={`${inputClass} w-14 text-center`}
+                    />
+                    <span className="text-xs text-loco-light/40">sec</span>
+                  </span>
+                )}
+                {opt.value === 'specific' && timerMode === 'specific' && (
+                  <input
+                    type="datetime-local"
+                    value={specificTime}
+                    onChange={e => setSpecificTime(e.target.value)}
+                    className={`${inputClass} ml-1`}
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={openVoting}
+              className="flex-1 bg-loco-green hover:bg-loco-green-dark text-white font-bold rounded-xl py-2 text-sm transition-all active:scale-[0.98]"
+            >
+              Open Now
+            </button>
+            <button
+              onClick={() => { setOpeningWithTimer(false); setTimerMode('none') }}
+              className="px-4 py-2 bg-loco-purple-dark hover:bg-loco-purple border border-loco-purple text-loco-light/60 rounded-xl text-sm transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 mt-4 flex-wrap">
         <button
-          onClick={toggleStatus}
+          onClick={poll.status === 'open' ? closeVoting : () => setOpeningWithTimer(true)}
           className={`flex-1 font-bold rounded-xl py-2.5 text-sm transition-all active:scale-[0.98] ${
             poll.status === 'open'
               ? 'bg-loco-gold hover:bg-loco-gold-dark text-loco-text'

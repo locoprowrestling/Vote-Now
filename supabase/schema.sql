@@ -15,6 +15,7 @@ create table polls (
                  check (status in ('open', 'closed')),
   show_results boolean not null default false,
   vote_reset_count integer not null default 0,
+  closes_at    timestamptz,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -76,8 +77,16 @@ alter table votes   enable row level security;
 create policy "polls_select"   on polls   for select to anon using (true);
 create policy "options_select" on options for select to anon using (true);
 
--- Public can insert votes (unique constraint enforces 1 per session per poll)
-create policy "votes_insert" on votes for insert to anon with check (true);
+-- Public can insert votes; RLS also enforces poll is open and not past closes_at
+create policy "votes_insert" on votes for insert to anon
+  with check (
+    exists (
+      select 1 from polls
+      where polls.id = votes.poll_id
+        and polls.status = 'open'
+        and (polls.closes_at is null or polls.closes_at > now())
+    )
+  );
 
 -- ============================================================
 -- EMAIL OPT-IN (one row per browser session)

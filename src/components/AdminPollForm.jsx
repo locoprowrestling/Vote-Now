@@ -29,6 +29,12 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
     }
     return [{ label: '', emoji: '' }, { label: '', emoji: '' }]
   })
+  const [closesAt, setClosesAt] = useState(() => {
+    if (initialPoll?.closes_at) {
+      return new Date(initialPoll.closes_at).toISOString().slice(0, 16)
+    }
+    return ''
+  })
   const [submitting, setSubmitting] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [error, setError] = useState(null)
@@ -78,6 +84,8 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
         emoji: o.emoji?.trim() || null,
       }))
 
+      const closesAtISO = closesAt ? new Date(closesAt).toISOString() : null
+
       if (isEditing) {
         await adminAction('update_poll', {
           pollId: initialPoll.id,
@@ -85,6 +93,7 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
           description: description.trim() || null,
           type,
           options: opts,
+          closesAt: closesAtISO,
         })
       } else {
         await adminAction('create_poll', {
@@ -92,6 +101,7 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
           description: description.trim() || null,
           type,
           options: opts,
+          closesAt: closesAtISO,
         })
       }
     } catch (err) {
@@ -177,6 +187,19 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
             onChange={e => setDescription(e.target.value)}
             className={inputClass}
             placeholder="Subtitle or extra context"
+          />
+        </div>
+
+        {/* Auto-close at */}
+        <div>
+          <label className="block text-xs text-loco-light/50 mb-1 uppercase tracking-wider">
+            Auto-close at <span className="normal-case text-loco-light/30">(optional)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={closesAt}
+            onChange={e => setClosesAt(e.target.value)}
+            className={inputClass}
           />
         </div>
 
