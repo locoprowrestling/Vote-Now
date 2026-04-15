@@ -34,10 +34,15 @@ export function useCountdown(closesAt) {
   }
 }
 
-/** Format seconds as M:SS */
+/** Format seconds as human-readable time (days, hours, mins, secs) */
 export function formatCountdown(secondsLeft) {
   if (secondsLeft === null) return ''
-  const m = Math.floor(secondsLeft / 60)
+  const d = Math.floor(secondsLeft / 86400)
+  const h = Math.floor((secondsLeft % 86400) / 3600)
+  const m = Math.floor((secondsLeft % 3600) / 60)
   const s = secondsLeft % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+  if (d > 0) return `${d}d ${h}h ${m}m`
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
 }
