@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { adminAction } from '../lib/supabaseClient'
 import { useVoteCounts } from '../hooks/useVoteCounts'
-import { useTextResponseCounts } from '../hooks/useTextResponseCounts'
+import { useAdminTextResponses } from '../hooks/useAdminTextResponses'
 import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import AdminPollForm from './AdminPollForm'
 import TextResultsLeaderboard from './TextResultsLeaderboard'
@@ -10,7 +10,7 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
   const isText = poll.type === 'text'
   const { counts } = useVoteCounts(poll.id, poll.vote_reset_count)
-  const { results: textResults, loading: textResultsLoading } = useTextResponseCounts(poll.id, {
+  const { results: textResults, loading: textResultsLoading, error: textResultsError } = useAdminTextResponses(poll.id, {
     enabled: isText,
     resetToken: poll.vote_reset_count,
   })
@@ -132,6 +132,8 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
             <div className="space-y-1">
               {textResultsLoading ? (
                 <p className="text-xs text-loco-light/30 italic">Loading responses...</p>
+              ) : textResultsError ? (
+                <p className="text-xs text-red-400 italic">Couldn&apos;t load responses.</p>
               ) : (
                 <TextResultsLeaderboard results={textResults} />
               )}
