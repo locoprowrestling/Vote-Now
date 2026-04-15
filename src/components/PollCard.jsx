@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { useState, useRef } from 'react'
+import { Turnstile } from '@marsidev/react-turnstile'
+import { submitVote } from '../lib/supabaseClient'
 import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
 import { useVoteCounts } from '../hooks/useVoteCounts'
 import ResultsBar from './ResultsBar'
@@ -10,6 +11,8 @@ export default function PollCard({ poll }) {
   const [submitting, setSubmitting] = useState(null)
   const [errorMsg, setErrorMsg] = useState(null)
   const { counts } = useVoteCounts(poll.id)
+  const turnstileRef = useRef(null)
+  const [cfToken, setCfToken] = useState(null)
 
   // Closed poll with show_results — display final results, no voting
   if (poll.status === 'closed') {
@@ -34,27 +37,17 @@ export default function PollCard({ poll }) {
     setSubmitting(optionId)
     setErrorMsg(null)
 
-    const { error } = await supabase.from('votes').insert({
-      poll_id: poll.id,
-      option_id: optionId,
-      session_id: getSessionId(),
-    })
-
-    if (error) {
-      if (error.code === '23505') {
-        recordVote(poll.id)
-        setVoted(true)
-      } else {
-        setErrorMsg('Something went wrong. Please try again.')
-        setSubmitting(null)
-        return
-      }
-    } else {
+    try {
+      await submitVote(poll.id, optionId, getSessionId(), cfToken)
       recordVote(poll.id)
       setVoted(true)
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.')
+      turnstileRef.current?.reset()
+      setCfToken(null)
+    } finally {
+      setSubmitting(null)
     }
-
-    setSubmitting(null)
   }
 
   const isReaction = poll.type === 'reaction'
@@ -74,6 +67,13 @@ export default function PollCard({ poll }) {
       {poll.description && (
         <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
       )}
+
+      <Turnstile
+        ref={turnstileRef}
+        siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+        onSuccess={setCfToken}
+        options={{ size: 'invisible' }}
+      />
 
       {voted ? (
         <>

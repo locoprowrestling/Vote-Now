@@ -20,6 +20,14 @@ export function setAdminPassword(pw) {
   _adminPassword = pw
 }
 
+export async function submitVote(poll_id, option_id, session_id, turnstileToken) {
+  const { data, error } = await supabase.functions.invoke('submit-vote', {
+    body: { poll_id, option_id, session_id, turnstileToken },
+  })
+  if (error) throw error
+  return data
+}
+
 export async function adminAction(action, payload = {}) {
   const { data, error } = await supabase.functions.invoke('admin-action', {
     body: {
