@@ -16,12 +16,6 @@ export default function PollCard({ poll }) {
     return (
       <div className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-5 mb-4">
         <div className="flex items-start gap-2 mb-1">
-          <span className="text-xs uppercase tracking-widest text-loco-gold font-semibold">
-            {poll.type === 'prediction' && 'Match Prediction'}
-            {poll.type === 'favorite' && 'Fan Favorite'}
-            {poll.type === 'reaction' && 'Live Reaction'}
-            {poll.type === 'custom' && 'Vote Now'}
-          </span>
           <span className="text-xs uppercase tracking-widest text-loco-light/40 font-semibold ml-auto">
             Final Results
           </span>
