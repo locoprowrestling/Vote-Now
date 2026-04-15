@@ -43,6 +43,10 @@ export default function FanPage() {
       )}
 
       {emailSubmitted && <MailingListSignup />}
+
+      <footer className="max-w-lg mx-auto mt-10 pt-6 border-t border-loco-purple text-center text-xs text-loco-light/35">
+        Vote-Now&trade; Polling Engine &copy; 2026 LoCo Pro Wrestling LLC. All rights reserved.
+      </footer>
     </div>
   )
 }
