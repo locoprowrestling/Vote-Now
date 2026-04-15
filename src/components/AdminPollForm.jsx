@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabaseAdmin } from '../lib/supabaseClient'
+import { adminAction } from '../lib/supabaseClient'
 
 const POLL_TYPES = [
   { value: 'prediction', label: 'Match Prediction' },
@@ -66,78 +66,35 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
       setError('At least 2 options are required.')
       return
     }
-    if (!supabaseAdmin) {
-      setError('Admin client not configured. Check VITE_SUPABASE_SERVICE_KEY.')
-      return
-    }
 
     setSubmitting(true)
 
-    if (isEditing) {
-      // Update poll fields
-      const { error: pollError } = await supabaseAdmin
-        .from('polls')
-        .update({ title: title.trim(), description: description.trim() || null, type })
-        .eq('id', initialPoll.id)
-
-      if (pollError) {
-        setError(pollError.message)
-        setSubmitting(false)
-        return
-      }
-
-      // Replace all options: delete existing, insert new
-      const { error: delError } = await supabaseAdmin
-        .from('options')
-        .delete()
-        .eq('poll_id', initialPoll.id)
-
-      if (delError) {
-        setError(delError.message)
-        setSubmitting(false)
-        return
-      }
-
-      const optionRows = validOptions.map((o, i) => ({
-        poll_id: initialPoll.id,
+    try {
+      const opts = validOptions.map(o => ({
         label: o.label.trim(),
         emoji: o.emoji?.trim() || null,
-        sort_order: i,
       }))
 
-      const { error: optError } = await supabaseAdmin.from('options').insert(optionRows)
-      if (optError) {
-        setError(optError.message)
-        setSubmitting(false)
-        return
+      if (isEditing) {
+        await adminAction('update_poll', {
+          pollId: initialPoll.id,
+          title: title.trim(),
+          description: description.trim() || null,
+          type,
+          options: opts,
+        })
+      } else {
+        await adminAction('create_poll', {
+          title: title.trim(),
+          description: description.trim() || null,
+          type,
+          options: opts,
+        })
       }
-    } else {
-      // Create new poll
-      const { data: poll, error: pollError } = await supabaseAdmin
-        .from('polls')
-        .insert({ title: title.trim(), description: description.trim() || null, type, status: 'closed' })
-        .select()
-        .single()
-
-      if (pollError) {
-        setError(pollError.message)
-        setSubmitting(false)
-        return
-      }
-
-      const optionRows = validOptions.map((o, i) => ({
-        poll_id: poll.id,
-        label: o.label.trim(),
-        emoji: o.emoji?.trim() || null,
-        sort_order: i,
-      }))
-
-      const { error: optError } = await supabaseAdmin.from('options').insert(optionRows)
-      if (optError) {
-        setError(optError.message)
-        setSubmitting(false)
-        return
-      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong.')
+      setSubmitting(false)
+      return
     }
 
     setSubmitting(false)

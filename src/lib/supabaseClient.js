@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase env vars. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
@@ -13,7 +12,13 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder'
 )
 
-// Service-role client for admin writes — only used behind PasswordGate
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseServiceKey)
-  : null
+// Call the admin-action Edge Function — service key never touches the browser
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD
+
+export async function adminAction(action, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-action', {
+    body: { adminPassword: ADMIN_PASSWORD, action, payload },
+  })
+  if (error) throw error
+  return data
+}
