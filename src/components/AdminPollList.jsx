@@ -42,31 +42,31 @@ function PollRow({ poll, onRefetch }) {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 mb-3">
+    <div className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-4 mb-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                 poll.status === 'open'
-                  ? 'bg-green-900 text-green-400'
-                  : 'bg-gray-700 text-gray-400'
+                  ? 'bg-loco-green/20 text-loco-green'
+                  : 'bg-loco-purple text-loco-light/50'
               }`}
             >
               {poll.status === 'open' ? 'LIVE' : 'CLOSED'}
             </span>
-            <span className="text-xs text-gray-500 uppercase tracking-wide">
+            <span className="text-xs text-loco-light/40 uppercase tracking-wide">
               {poll.type}
             </span>
           </div>
           <h3 className="text-white font-bold mt-1 truncate">{poll.title}</h3>
           {poll.description && (
-            <p className="text-xs text-gray-500 mt-0.5 truncate">{poll.description}</p>
+            <p className="text-xs text-loco-light/40 mt-0.5 truncate">{poll.description}</p>
           )}
         </div>
         <div className="text-right shrink-0">
           <div className="text-white font-bold">{totalVotes}</div>
-          <div className="text-xs text-gray-500">votes</div>
+          <div className="text-xs text-loco-light/40">votes</div>
         </div>
       </div>
 
@@ -77,36 +77,36 @@ function PollRow({ poll, onRefetch }) {
           const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
           return (
             <div key={opt.id} className="flex items-center gap-2 text-sm">
-              <span className="text-gray-400 w-4 text-center">{opt.emoji || ''}</span>
-              <span className="text-gray-300 flex-1 truncate">{opt.label}</span>
-              <span className="text-gray-400 text-xs w-8 text-right">{pct}%</span>
-              <span className="text-gray-500 text-xs w-10 text-right">{count}v</span>
+              <span className="text-loco-light/60 w-4 text-center">{opt.emoji || ''}</span>
+              <span className="text-loco-light/80 flex-1 truncate">{opt.label}</span>
+              <span className="text-loco-light/50 text-xs w-8 text-right">{pct}%</span>
+              <span className="text-loco-light/40 text-xs w-10 text-right">{count}v</span>
             </div>
           )
         })}
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-4 flex-wrap">
         <button
           onClick={toggleStatus}
           className={`flex-1 font-bold rounded-xl py-2.5 text-sm transition-all active:scale-[0.98] ${
             poll.status === 'open'
-              ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-              : 'bg-green-700 hover:bg-green-600 text-white'
+              ? 'bg-loco-gold hover:bg-loco-gold-dark text-loco-text'
+              : 'bg-loco-green hover:bg-loco-green-dark text-white'
           }`}
         >
           {poll.status === 'open' ? 'Close Voting' : 'Open Voting'}
         </button>
         <button
           onClick={() => setEditing(true)}
-          className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 rounded-xl text-sm transition-all active:scale-[0.98]"
+          className="px-4 py-2.5 bg-loco-purple-dark hover:bg-loco-purple border border-loco-purple text-loco-light/70 rounded-xl text-sm transition-all active:scale-[0.98]"
         >
           Edit
         </button>
         <button
           onClick={copyPoll}
-          className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 rounded-xl text-sm transition-all active:scale-[0.98]"
+          className="px-4 py-2.5 bg-loco-purple-dark hover:bg-loco-purple border border-loco-purple text-loco-light/70 rounded-xl text-sm transition-all active:scale-[0.98]"
         >
           Copy
         </button>
@@ -114,15 +114,15 @@ function PollRow({ poll, onRefetch }) {
           onClick={toggleShowResults}
           className={`px-4 py-2.5 border rounded-xl text-sm transition-all active:scale-[0.98] ${
             poll.show_results
-              ? 'bg-blue-900/40 border-blue-700 text-blue-300 hover:bg-blue-900/60'
-              : 'bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300'
+              ? 'bg-loco-gold/20 border-loco-gold text-loco-gold hover:bg-loco-gold/30'
+              : 'bg-loco-purple-dark hover:bg-loco-purple border-loco-purple text-loco-light/70'
           }`}
         >
           {poll.show_results ? 'Hide Results' : 'Show Results'}
         </button>
         <button
           onClick={deletePoll}
-          className="px-3 py-2.5 bg-gray-800 hover:bg-red-900/50 border border-gray-700 hover:border-red-700 text-gray-500 hover:text-red-400 rounded-xl text-sm transition-all active:scale-[0.98]"
+          className="px-3 py-2.5 bg-loco-purple-dark hover:bg-red-900/50 border border-loco-purple hover:border-red-700 text-loco-light/30 hover:text-red-400 rounded-xl text-sm transition-all active:scale-[0.98]"
         >
           ✕
         </button>
@@ -134,7 +134,7 @@ function PollRow({ poll, onRefetch }) {
 export default function AdminPollList({ polls, onRefetch }) {
   if (polls.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-600">
+      <div className="text-center py-12 text-loco-light/30">
         <p>No polls yet. Create one above.</p>
       </div>
     )
@@ -147,7 +147,7 @@ export default function AdminPollList({ polls, onRefetch }) {
     <div>
       {open.length > 0 && (
         <div className="mb-2">
-          <h4 className="text-xs text-green-500 uppercase tracking-widest font-semibold mb-2">
+          <h4 className="text-xs text-loco-green uppercase tracking-widest font-semibold mb-2">
             Live Now
           </h4>
           {open.map(p => <PollRow key={p.id} poll={p} onRefetch={onRefetch} />)}
@@ -155,7 +155,7 @@ export default function AdminPollList({ polls, onRefetch }) {
       )}
       {closed.length > 0 && (
         <div>
-          <h4 className="text-xs text-gray-600 uppercase tracking-widest font-semibold mb-2 mt-4">
+          <h4 className="text-xs text-loco-light/30 uppercase tracking-widest font-semibold mb-2 mt-4">
             Closed
           </h4>
           {closed.map(p => <PollRow key={p.id} poll={p} onRefetch={onRefetch} />)}

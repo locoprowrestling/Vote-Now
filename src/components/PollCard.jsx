@@ -11,7 +11,6 @@ export default function PollCard({ poll }) {
   const [errorMsg, setErrorMsg] = useState(null)
   const { counts } = useVoteCounts(poll.id)
 
-  // Email opt-in state — only shown on first vote of the session
   const [email, setEmail] = useState('')
   const [mailingList, setMailingList] = useState(false)
   const showEmailForm = !voted && !hasSubmittedEmail() && poll.status === 'open'
@@ -19,21 +18,21 @@ export default function PollCard({ poll }) {
   // Closed poll with show_results — display final results, no voting
   if (poll.status === 'closed') {
     return (
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-4">
+      <div className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-5 mb-4">
         <div className="flex items-start gap-2 mb-1">
-          <span className="text-xs uppercase tracking-widest text-red-500 font-semibold">
+          <span className="text-xs uppercase tracking-widest text-loco-gold font-semibold">
             {poll.type === 'prediction' && 'Match Prediction'}
             {poll.type === 'favorite' && 'Fan Favorite'}
             {poll.type === 'reaction' && 'Live Reaction'}
             {poll.type === 'custom' && 'Vote Now'}
           </span>
-          <span className="text-xs uppercase tracking-widest text-gray-500 font-semibold ml-auto">
+          <span className="text-xs uppercase tracking-widest text-loco-light/40 font-semibold ml-auto">
             Final Results
           </span>
         </div>
         <h2 className="text-xl font-bold text-white mb-1">{poll.title}</h2>
         {poll.description && (
-          <p className="text-sm text-gray-400 mb-3">{poll.description}</p>
+          <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
         )}
         <ResultsBar options={options} counts={counts} />
       </div>
@@ -53,7 +52,6 @@ export default function PollCard({ poll }) {
 
     if (error) {
       if (error.code === '23505') {
-        // Unique constraint — already voted from another tab/device
         recordVote(poll.id)
         setVoted(true)
       } else {
@@ -66,7 +64,6 @@ export default function PollCard({ poll }) {
       setVoted(true)
     }
 
-    // Save email if provided (upsert in case of retry)
     if (email.trim()) {
       await supabase.from('voter_emails').upsert(
         { session_id: getSessionId(), email: email.trim(), mailing_list: mailingList },
@@ -74,16 +71,15 @@ export default function PollCard({ poll }) {
       )
     }
     recordEmailSubmitted()
-
     setSubmitting(null)
   }
 
   const isReaction = poll.type === 'reaction'
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-4">
+    <div className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-5 mb-4">
       <div className="flex items-start gap-2 mb-1">
-        <span className="text-xs uppercase tracking-widest text-red-500 font-semibold">
+        <span className="text-xs uppercase tracking-widest text-loco-gold font-semibold">
           {poll.type === 'prediction' && 'Match Prediction'}
           {poll.type === 'favorite' && 'Fan Favorite'}
           {poll.type === 'reaction' && 'Live Reaction'}
@@ -93,65 +89,63 @@ export default function PollCard({ poll }) {
 
       <h2 className="text-xl font-bold text-white mb-1">{poll.title}</h2>
       {poll.description && (
-        <p className="text-sm text-gray-400 mb-3">{poll.description}</p>
+        <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
       )}
 
       {/* Email opt-in — shown once per session before first vote */}
       {showEmailForm && (
-        <div className="mb-4 pb-4 border-b border-gray-700">
+        <div className="mb-4 pb-4 border-b border-loco-purple">
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="Email (optional)"
-            className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-600 transition-colors"
+            className="w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-4 py-2.5 text-sm text-white placeholder-loco-light/30 focus:outline-none focus:border-loco-gold transition-colors"
           />
           <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={mailingList}
               onChange={e => setMailingList(e.target.checked)}
-              className="w-4 h-4 accent-red-600"
+              className="w-4 h-4 accent-loco-gold"
             />
-            <span className="text-sm text-gray-400">I would like to sign up for your mailing list</span>
+            <span className="text-sm text-loco-light/60">I would like to sign up for your mailing list</span>
           </label>
         </div>
       )}
 
       {voted ? (
         <>
-          <div className="text-sm text-green-400 font-medium mb-2">
+          <div className="text-sm text-loco-green font-medium mb-2">
             Your vote is in!
           </div>
           <ResultsBar options={options} counts={counts} />
         </>
       ) : isReaction ? (
-        // Emoji reaction layout — big tappable buttons in a row
         <div className="flex flex-wrap gap-3 justify-center mt-3">
           {options.map(option => (
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
               disabled={!!submitting}
-              className="flex flex-col items-center gap-1 bg-gray-800 hover:bg-gray-700 active:scale-95 rounded-2xl px-5 py-4 transition-all disabled:opacity-50 min-w-[72px]"
+              className="flex flex-col items-center gap-1 bg-loco-purple-dark hover:bg-loco-purple active:scale-95 rounded-2xl px-5 py-4 transition-all disabled:opacity-50 min-w-[72px] border border-loco-purple hover:border-loco-gold"
             >
               <span className="text-3xl">{option.emoji || option.label}</span>
-              <span className="text-xs text-gray-400">{option.label}</span>
+              <span className="text-xs text-loco-light/60">{option.label}</span>
             </button>
           ))}
         </div>
       ) : (
-        // Standard vote buttons — full-width stacked
         <div className="space-y-2 mt-3">
           {options.map(option => (
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
               disabled={!!submitting}
-              className="w-full text-left bg-gray-800 hover:bg-red-900/40 border border-gray-600 hover:border-red-600 active:scale-[0.98] rounded-xl px-4 py-4 text-white font-medium transition-all disabled:opacity-50 flex items-center gap-2"
+              className="w-full text-left bg-loco-purple-dark hover:bg-loco-purple/60 border border-loco-purple hover:border-loco-gold active:scale-[0.98] rounded-xl px-4 py-4 text-white font-medium transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {submitting === option.id ? (
-                <span className="text-gray-400 text-sm">Submitting...</span>
+                <span className="text-loco-light/40 text-sm">Submitting...</span>
               ) : (
                 <>
                   {option.emoji && <span className="text-xl">{option.emoji}</span>}

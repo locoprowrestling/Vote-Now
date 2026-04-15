@@ -25,37 +25,37 @@ export default function PasswordGate({ children }) {
   if (authed) return children({ onSignOut: handleSignOut })
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+    <div className="min-h-screen bg-loco-purple-dark flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-red-500 font-black text-2xl tracking-tight uppercase">
+          <div className="text-loco-gold font-black text-2xl tracking-tight uppercase">
             LoCo Pro Wrestling
           </div>
-          <div className="text-gray-400 text-sm mt-1 tracking-widest uppercase">
+          <div className="text-loco-light/60 text-sm mt-1 tracking-widest uppercase">
             Admin Panel
           </div>
         </div>
 
         <form
           onSubmit={handleLogin}
-          className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-4"
+          className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-6 space-y-4"
         >
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label className="block text-sm text-loco-light/60 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => { setPassword(e.target.value); setError(null) }}
               autoFocus
               required
-              className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 text-base"
+              className="w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-4 py-3 text-white focus:outline-none focus:border-loco-gold text-base transition-colors"
               placeholder="Admin password"
             />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all"
+            className="w-full bg-loco-purple hover:bg-loco-purple-dark active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all border border-loco-purple"
           >
             Sign In
           </button>

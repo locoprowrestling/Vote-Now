@@ -102,11 +102,12 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
   }
 
   const isReaction = type === 'reaction'
+  const inputClass = "w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-gray-900 border border-gray-700 rounded-2xl p-5 mb-4"
+      className="bg-loco-purple-deep border border-loco-purple rounded-2xl p-5 mb-4"
     >
       <h3 className="text-white font-bold text-lg mb-4">
         {isEditing ? 'Edit Poll' : 'New Poll'}
@@ -115,11 +116,11 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
       <div className="space-y-3">
         {/* Type */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Type</label>
+          <label className="block text-xs text-loco-light/50 mb-1 uppercase tracking-wider">Type</label>
           <select
             value={type}
             onChange={e => handleTypeChange(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-500"
+            className={inputClass}
           >
             {POLL_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -129,34 +130,34 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
 
         {/* Title */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Title</label>
+          <label className="block text-xs text-loco-light/50 mb-1 uppercase tracking-wider">Title</label>
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             required
-            className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-500"
+            className={inputClass}
             placeholder="Who will win the main event?"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">
-            Description <span className="normal-case text-gray-600">(optional)</span>
+          <label className="block text-xs text-loco-light/50 mb-1 uppercase tracking-wider">
+            Description <span className="normal-case text-loco-light/30">(optional)</span>
           </label>
           <input
             type="text"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-500"
+            className={inputClass}
             placeholder="Subtitle or extra context"
           />
         </div>
 
         {/* Options */}
         <div>
-          <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider">Options</label>
+          <label className="block text-xs text-loco-light/50 mb-2 uppercase tracking-wider">Options</label>
           <div className="space-y-2">
             {options.map((opt, i) => (
               <div key={i} className="flex gap-2 items-center">
@@ -165,7 +166,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
                     type="text"
                     value={opt.emoji}
                     onChange={e => updateOption(i, 'emoji', e.target.value)}
-                    className="w-14 bg-gray-800 border border-gray-600 rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-red-500"
+                    className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
                     placeholder="😀"
                   />
                 )}
@@ -173,7 +174,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
                   type="text"
                   value={opt.label}
                   onChange={e => updateOption(i, 'label', e.target.value)}
-                  className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-500"
+                  className="flex-1 bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
                   placeholder={`Option ${i + 1}`}
                 />
                 {!isReaction && (
@@ -181,7 +182,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
                     type="text"
                     value={opt.emoji}
                     onChange={e => updateOption(i, 'emoji', e.target.value)}
-                    className="w-14 bg-gray-800 border border-gray-600 rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-red-500"
+                    className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
                     placeholder="🏆"
                   />
                 )}
@@ -189,7 +190,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
                   <button
                     type="button"
                     onClick={() => removeOption(i)}
-                    className="text-gray-500 hover:text-red-400 text-lg leading-none px-1"
+                    className="text-loco-light/30 hover:text-red-400 text-lg leading-none px-1"
                   >
                     ×
                   </button>
@@ -201,7 +202,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
             <button
               type="button"
               onClick={addOption}
-              className="mt-2 text-sm text-red-500 hover:text-red-400"
+              className="mt-2 text-sm text-loco-gold hover:text-loco-gold-dark"
             >
               + Add option
             </button>
@@ -215,14 +216,14 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
         <button
           type="submit"
           disabled={submitting}
-          className="flex-1 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all disabled:opacity-50"
+          className="flex-1 bg-loco-purple hover:bg-loco-purple-dark active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all disabled:opacity-50 border border-loco-purple"
         >
           {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Poll'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium rounded-xl py-3 transition-all"
+          className="flex-1 bg-loco-purple-dark hover:bg-loco-purple text-loco-light/60 font-medium rounded-xl py-3 transition-all border border-loco-purple"
         >
           Cancel
         </button>
