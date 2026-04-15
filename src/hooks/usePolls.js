@@ -10,7 +10,7 @@ export function usePolls({ adminView = false } = {}) {
     let query = supabase
       .from('polls')
       .select('*, options(*)')
-      .order('created_at', { ascending: false })
+      .order('sort_order', { ascending: true })
 
     if (!adminView) {
       query = query.or('status.eq.open,show_results.eq.true')

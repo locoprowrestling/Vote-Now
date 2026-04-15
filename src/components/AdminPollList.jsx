@@ -4,7 +4,7 @@ import { useVoteCounts } from '../hooks/useVoteCounts'
 import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import AdminPollForm from './AdminPollForm'
 
-function PollRow({ poll, onRefetch }) {
+function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
   const { counts } = useVoteCounts(poll.id, poll.vote_reset_count)
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
@@ -226,6 +226,22 @@ function PollRow({ poll, onRefetch }) {
         >
           Copy
         </button>
+        {onMoveUp && (
+          <button
+            onClick={onMoveUp}
+            className="px-3 py-2.5 bg-loco-purple-dark hover:bg-loco-purple border border-loco-purple text-loco-light/70 rounded-xl text-sm transition-all active:scale-[0.98]"
+          >
+            ↑
+          </button>
+        )}
+        {onMoveDown && (
+          <button
+            onClick={onMoveDown}
+            className="px-3 py-2.5 bg-loco-purple-dark hover:bg-loco-purple border border-loco-purple text-loco-light/70 rounded-xl text-sm transition-all active:scale-[0.98]"
+          >
+            ↓
+          </button>
+        )}
         <button
           onClick={toggleShowResults}
           className={`px-4 py-2.5 border rounded-xl text-sm transition-all active:scale-[0.98] ${
@@ -259,6 +275,11 @@ export default function AdminPollList({ polls, onRefetch }) {
   const open = polls.filter(p => p.status === 'open')
   const closed = polls.filter(p => p.status === 'closed')
 
+  async function swapPolls(pollId, swapWithId) {
+    await adminAction('swap_poll_order', { pollId, swapWithId })
+    onRefetch()
+  }
+
   return (
     <div>
       {open.length > 0 && (
@@ -266,7 +287,13 @@ export default function AdminPollList({ polls, onRefetch }) {
           <h4 className="text-xs text-loco-green uppercase tracking-widest font-semibold mb-2">
             Live Now
           </h4>
-          {open.map(p => <PollRow key={p.id} poll={p} onRefetch={onRefetch} />)}
+          {open.map((p, i) => (
+            <PollRow
+              key={p.id} poll={p} onRefetch={onRefetch}
+              onMoveUp={i > 0 ? () => swapPolls(p.id, open[i - 1].id) : null}
+              onMoveDown={i < open.length - 1 ? () => swapPolls(p.id, open[i + 1].id) : null}
+            />
+          ))}
         </div>
       )}
       {closed.length > 0 && (
@@ -274,7 +301,13 @@ export default function AdminPollList({ polls, onRefetch }) {
           <h4 className="text-xs text-loco-light/30 uppercase tracking-widest font-semibold mb-2 mt-4">
             Closed
           </h4>
-          {closed.map(p => <PollRow key={p.id} poll={p} onRefetch={onRefetch} />)}
+          {closed.map((p, i) => (
+            <PollRow
+              key={p.id} poll={p} onRefetch={onRefetch}
+              onMoveUp={i > 0 ? () => swapPolls(p.id, closed[i - 1].id) : null}
+              onMoveDown={i < closed.length - 1 ? () => swapPolls(p.id, closed[i + 1].id) : null}
+            />
+          ))}
         </div>
       )}
     </div>

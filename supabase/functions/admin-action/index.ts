@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       const { title, description, type, options, closesAt } = payload
       const { data: poll, error } = await supabase
         .from('polls')
-        .insert({ title, description: description || null, type, status: 'closed', closes_at: closesAt || null })
+        .insert({ title, description: description || null, type, status: 'closed', closes_at: closesAt || null, sort_order: 0 })
         .select()
         .single()
       if (error) throw error
@@ -224,6 +224,21 @@ Deno.serve(async (req) => {
         .eq('id', pollId)
       if (updatePollError) throw updatePollError
 
+      result = { success: true }
+
+    } else if (action === 'swap_poll_order') {
+      const { pollId, swapWithId } = payload
+      const { data: pollsData, error } = await supabase
+        .from('polls')
+        .select('id, sort_order')
+        .in('id', [pollId, swapWithId])
+      if (error) throw error
+      const a = pollsData.find((p: { id: string }) => p.id === pollId)
+      const b = pollsData.find((p: { id: string }) => p.id === swapWithId)
+      const { error: e1 } = await supabase.from('polls').update({ sort_order: b.sort_order }).eq('id', pollId)
+      if (e1) throw e1
+      const { error: e2 } = await supabase.from('polls').update({ sort_order: a.sort_order }).eq('id', swapWithId)
+      if (e2) throw e2
       result = { success: true }
 
     } else if (action === 'get_mailing_list') {

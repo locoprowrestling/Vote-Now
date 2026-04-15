@@ -16,6 +16,7 @@ create table polls (
   show_results boolean not null default false,
   vote_reset_count integer not null default 0,
   closes_at    timestamptz,
+  sort_order   integer not null default 0,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
