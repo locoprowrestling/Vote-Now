@@ -63,6 +63,14 @@ export async function submitTextResponse(poll_id, text_response, session_id, tur
   return data
 }
 
+export async function fetchPublicTextResults(pollId) {
+  const { data, error } = await supabase.functions.invoke('poll-results', {
+    body: { pollId },
+  })
+  if (error) throw error
+  return data
+}
+
 export async function submitMailingListSignup(session_id, email, mailing_list) {
   let invokeError = null
 

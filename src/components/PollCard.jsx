@@ -19,7 +19,7 @@ export default function PollCard({ poll }) {
   const [textInput, setTextInput] = useState('')
   const { counts } = useVoteCounts(poll.id, voteResetCount)
   const { results: textResults, loading: textResultsLoading } = useTextResponseCounts(poll.id, {
-    enabled: isText,
+    enabled: isText && poll.status === 'closed',
     resetToken: voteResetCount,
   })
   const turnstileRef = useRef(null)

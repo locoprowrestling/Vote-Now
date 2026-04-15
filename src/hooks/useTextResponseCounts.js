@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { fetchPublicTextResults, supabase } from '../lib/supabaseClient'
+import { summarizeTextResponses } from '../lib/textResponseResults'
 
 export function useTextResponseCounts(pollId, { enabled = true, resetToken = 0 } = {}) {
   const [results, setResults] = useState([])
@@ -27,12 +28,16 @@ export function useTextResponseCounts(pollId, { enabled = true, resetToken = 0 }
       if (cancelled) return
 
       if (!error && data) {
-        setResults(data.map(row => ({
-          ...row,
-          response_count: Number(row.response_count),
-        })))
+        setResults(summarizeTextResponses(data))
       } else {
-        setResults([])
+        try {
+          const fallbackData = await fetchPublicTextResults(pollId)
+          if (cancelled) return
+          setResults(summarizeTextResponses(fallbackData || []))
+        } catch {
+          if (cancelled) return
+          setResults([])
+        }
       }
 
       setLoading(false)

@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.submit-vote]
 verify_jwt = false
+
+[functions.poll-results]
+verify_jwt = false
