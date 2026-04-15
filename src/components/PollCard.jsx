@@ -3,17 +3,25 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { submitVote, submitTextResponse } from '../lib/supabaseClient'
 import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
 import { useVoteCounts } from '../hooks/useVoteCounts'
+import { useTextResponseCounts } from '../hooks/useTextResponseCounts'
 import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import ResultsBar from './ResultsBar'
+import TextResultsLeaderboard from './TextResultsLeaderboard'
 
 export default function PollCard({ poll }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
   const voteResetCount = Number(poll.vote_reset_count || 0)
+  const isReaction = poll.type === 'reaction'
+  const isText = poll.type === 'text'
   const [voted, setVoted] = useState(() => hasVoted(poll.id, voteResetCount))
   const [submitting, setSubmitting] = useState(null)
   const [errorMsg, setErrorMsg] = useState(null)
   const [textInput, setTextInput] = useState('')
   const { counts } = useVoteCounts(poll.id, voteResetCount)
+  const { results: textResults, loading: textResultsLoading } = useTextResponseCounts(poll.id, {
+    enabled: isText,
+    resetToken: voteResetCount,
+  })
   const turnstileRef = useRef(null)
   const [cfToken, setCfToken] = useState(null)
   const { secondsLeft, expired } = useCountdown(poll.closes_at || null)
@@ -35,7 +43,15 @@ export default function PollCard({ poll }) {
         {poll.description && (
           <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
         )}
-        <ResultsBar options={options} counts={counts} />
+        {isText ? (
+          textResultsLoading ? (
+            <p className="text-sm text-loco-light/40 mt-3 text-center">Loading results...</p>
+          ) : (
+            <TextResultsLeaderboard results={textResults} emptyLabel="No responses yet." />
+          )
+        ) : (
+          <ResultsBar options={options} counts={counts} />
+        )}
       </div>
     )
   }
@@ -76,8 +92,6 @@ export default function PollCard({ poll }) {
     }
   }
 
-  const isReaction = poll.type === 'reaction'
-  const isText = poll.type === 'text'
   const votingBlocked = voted || expired
 
   return (

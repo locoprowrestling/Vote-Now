@@ -1,23 +1,23 @@
 import { useState, useEffect } from 'react'
 import { adminAction } from '../lib/supabaseClient'
 import { useVoteCounts } from '../hooks/useVoteCounts'
+import { useTextResponseCounts } from '../hooks/useTextResponseCounts'
 import { useCountdown, formatCountdown } from '../hooks/useCountdown'
 import AdminPollForm from './AdminPollForm'
+import TextResultsLeaderboard from './TextResultsLeaderboard'
 
 function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
   const isText = poll.type === 'text'
   const { counts } = useVoteCounts(poll.id, poll.vote_reset_count)
+  const { results: textResults, loading: textResultsLoading } = useTextResponseCounts(poll.id, {
+    enabled: isText,
+    resetToken: poll.vote_reset_count,
+  })
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
+  const totalTextResponses = textResults.reduce((sum, result) => sum + result.response_count, 0)
   const [editing, setEditing] = useState(false)
-  const [responses, setResponses] = useState(null)
   const [showResponses, setShowResponses] = useState(false)
-
-  async function loadResponses() {
-    const data = await adminAction('get_text_responses', { pollId: poll.id })
-    setResponses(data)
-    setShowResponses(true)
-  }
 
   // Timer panel state (shown when admin taps "Open Voting")
   const [openingWithTimer, setOpeningWithTimer] = useState(false)
@@ -39,7 +39,7 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
       onRefetch()
     }, ms)
     return () => clearTimeout(id)
-  }, [poll.closes_at, poll.status, poll.id])
+  }, [poll.closes_at, poll.status, poll.id, onRefetch])
 
   async function closeVoting() {
     await adminAction('toggle_status', { pollId: poll.id, status: 'closed' })
@@ -120,7 +120,7 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-white font-bold">{isText ? (responses?.length ?? '—') : totalVotes}</div>
+          <div className="text-white font-bold">{isText ? (textResultsLoading ? '—' : totalTextResponses) : totalVotes}</div>
           <div className="text-xs text-loco-light/40">{isText ? 'responses' : 'votes'}</div>
         </div>
       </div>
@@ -130,21 +130,17 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
         <div className="mt-3">
           {showResponses ? (
             <div className="space-y-1">
-              {responses.length === 0 ? (
-                <p className="text-xs text-loco-light/30 italic">No responses yet.</p>
+              {textResultsLoading ? (
+                <p className="text-xs text-loco-light/30 italic">Loading responses...</p>
               ) : (
-                responses.map(r => (
-                  <div key={r.id} className="text-sm text-loco-light/80 bg-loco-purple-dark rounded-lg px-3 py-1.5 truncate">
-                    {r.response}
-                  </div>
-                ))
+                <TextResultsLeaderboard results={textResults} />
               )}
               <button onClick={() => setShowResponses(false)} className="text-xs text-loco-light/30 hover:text-loco-light/60 mt-1">
                 Hide
               </button>
             </div>
           ) : (
-            <button onClick={loadResponses} className="text-xs text-loco-gold hover:text-loco-gold/70 mt-1">
+            <button onClick={() => setShowResponses(true)} className="text-xs text-loco-gold hover:text-loco-gold/70 mt-1">
               View Responses
             </button>
           )}

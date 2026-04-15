@@ -116,6 +116,50 @@ create policy "text_responses_insert" on text_responses for insert to anon
     )
   );
 
+-- Aggregated text response counts. Responses are grouped case-insensitively
+-- and with all whitespace removed so "Dean Ambrose" and "deanambrose" are
+-- treated as the same answer without exposing individual rows publicly.
+create or replace view text_response_counts as
+  with normalized as (
+    select
+      tr.id,
+      tr.poll_id,
+      regexp_replace(btrim(tr.response), '\s+', ' ', 'g') as response,
+      lower(regexp_replace(btrim(tr.response), '\s+', '', 'g')) as normalized_response,
+      tr.created_at
+    from text_responses tr
+  ),
+  ranked as (
+    select
+      normalized.*,
+      count(*) over (
+        partition by normalized.poll_id, normalized.normalized_response
+      ) as response_count,
+      min(normalized.created_at) over (
+        partition by normalized.poll_id, normalized.normalized_response
+      ) as first_response_at,
+      row_number() over (
+        partition by normalized.poll_id, normalized.normalized_response
+        order by
+          length(normalized.response) desc,
+          case when normalized.response ~ '\s' then 0 else 1 end,
+          normalized.created_at asc,
+          normalized.id asc
+      ) as representative_rank
+    from normalized
+    where normalized.normalized_response <> ''
+  )
+  select
+    ranked.poll_id,
+    ranked.normalized_response,
+    ranked.response as display_response,
+    ranked.response_count,
+    ranked.first_response_at
+  from ranked
+  where ranked.representative_rank = 1;
+
+grant select on text_response_counts to anon;
+
 -- ============================================================
 -- EMAIL OPT-IN (one row per browser session)
 -- ============================================================
@@ -141,4 +185,4 @@ grant insert on voter_emails to anon;
 -- ============================================================
 -- After running this SQL, go to:
 --   Supabase Dashboard > Database > Replication
---   and enable Realtime for the "votes" and "polls" tables.
+--   and enable Realtime for the "votes", "polls", and "text_responses" tables.

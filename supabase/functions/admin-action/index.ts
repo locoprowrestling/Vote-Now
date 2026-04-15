@@ -250,10 +250,11 @@ Deno.serve(async (req) => {
     } else if (action === 'get_text_responses') {
       const { pollId } = payload
       const { data, error } = await supabase
-        .from('text_responses')
-        .select('id, response, created_at')
+        .from('text_response_counts')
+        .select('normalized_response, display_response, response_count, first_response_at')
         .eq('poll_id', pollId)
-        .order('created_at', { ascending: true })
+        .order('response_count', { ascending: false })
+        .order('first_response_at', { ascending: true })
       if (error) throw error
       result = data
 
