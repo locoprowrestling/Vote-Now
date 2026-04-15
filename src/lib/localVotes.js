@@ -31,12 +31,16 @@ export function getSessionId() {
   return id
 }
 
-export function hasVoted(pollId) {
-  return !!storageGet(`voted_${pollId}`)
+function getVoteKey(pollId, voteResetCount = 0) {
+  return `voted_${pollId}_${voteResetCount}`
 }
 
-export function recordVote(pollId) {
-  storageSet(`voted_${pollId}`, '1')
+export function hasVoted(pollId, voteResetCount = 0) {
+  return !!storageGet(getVoteKey(pollId, voteResetCount))
+}
+
+export function recordVote(pollId, voteResetCount = 0) {
+  storageSet(getVoteKey(pollId, voteResetCount), '1')
 }
 
 export function hasSubmittedEmail() {

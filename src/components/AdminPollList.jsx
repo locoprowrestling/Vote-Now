@@ -5,7 +5,7 @@ import AdminPollForm from './AdminPollForm'
 
 function PollRow({ poll, onRefetch }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
-  const { counts } = useVoteCounts(poll.id)
+  const { counts } = useVoteCounts(poll.id, poll.vote_reset_count)
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
   const [editing, setEditing] = useState(false)
 
@@ -36,6 +36,7 @@ function PollRow({ poll, onRefetch }) {
       <AdminPollForm
         initialPoll={poll}
         onCreated={() => { setEditing(false); onRefetch() }}
+        onReset={() => onRefetch()}
         onCancel={() => setEditing(false)}
       />
     )

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-export function useVoteCounts(pollId) {
+export function useVoteCounts(pollId, resetToken = 0) {
   const [counts, setCounts] = useState({})
   const [loading, setLoading] = useState(true)
 
@@ -30,19 +30,21 @@ export function useVoteCounts(pollId) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'votes',
-          filter: `poll_id=eq.${pollId}`,
         },
-        () => {
-          fetchCounts()
+        payload => {
+          const changedPollId = payload.new?.poll_id || payload.old?.poll_id
+          if (changedPollId === pollId) {
+            fetchCounts()
+          }
         }
       )
       .subscribe()
 
     return () => supabase.removeChannel(channel)
-  }, [pollId, fetchCounts])
+  }, [pollId, resetToken, fetchCounts])
 
   return { counts, loading }
 }

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { submitVote } from '../lib/supabaseClient'
 import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
@@ -7,12 +7,17 @@ import ResultsBar from './ResultsBar'
 
 export default function PollCard({ poll }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
-  const [voted, setVoted] = useState(() => hasVoted(poll.id))
+  const voteResetCount = Number(poll.vote_reset_count || 0)
+  const [voted, setVoted] = useState(() => hasVoted(poll.id, voteResetCount))
   const [submitting, setSubmitting] = useState(null)
   const [errorMsg, setErrorMsg] = useState(null)
-  const { counts } = useVoteCounts(poll.id)
+  const { counts } = useVoteCounts(poll.id, voteResetCount)
   const turnstileRef = useRef(null)
   const [cfToken, setCfToken] = useState(null)
+
+  useEffect(() => {
+    setVoted(hasVoted(poll.id, voteResetCount))
+  }, [poll.id, voteResetCount])
 
   // Closed poll with show_results — display final results, no voting
   if (poll.status === 'closed') {
@@ -39,7 +44,7 @@ export default function PollCard({ poll }) {
 
     try {
       await submitVote(poll.id, optionId, getSessionId(), cfToken)
-      recordVote(poll.id)
+      recordVote(poll.id, voteResetCount)
       setVoted(true)
     } catch {
       setErrorMsg('Something went wrong. Please try again.')

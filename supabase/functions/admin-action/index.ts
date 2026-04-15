@@ -196,6 +196,29 @@ Deno.serve(async (req) => {
       if (error) throw error
       result = { success: true }
 
+    } else if (action === 'reset_poll') {
+      const { pollId } = payload
+      const { data: poll, error: pollError } = await supabase
+        .from('polls')
+        .select('vote_reset_count')
+        .eq('id', pollId)
+        .single()
+      if (pollError) throw pollError
+
+      const { error: deleteVotesError } = await supabase
+        .from('votes')
+        .delete()
+        .eq('poll_id', pollId)
+      if (deleteVotesError) throw deleteVotesError
+
+      const { error: updatePollError } = await supabase
+        .from('polls')
+        .update({ vote_reset_count: (poll.vote_reset_count || 0) + 1 })
+        .eq('id', pollId)
+      if (updatePollError) throw updatePollError
+
+      result = { success: true }
+
     } else if (action === 'get_mailing_list') {
       const { data, error } = await supabase
         .from('voter_emails')

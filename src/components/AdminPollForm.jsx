@@ -15,7 +15,7 @@ const DEFAULT_REACTION_OPTIONS = [
   { label: 'Boo', emoji: '👎' },
 ]
 
-export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
+export default function AdminPollForm({ onCreated, onCancel, onReset, initialPoll }) {
   const isEditing = !!initialPoll
 
   const [title, setTitle] = useState(initialPoll?.title || '')
@@ -30,7 +30,9 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
     return [{ label: '', emoji: '' }, { label: '', emoji: '' }]
   })
   const [submitting, setSubmitting] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null)
 
   function handleTypeChange(newType) {
     setType(newType)
@@ -60,6 +62,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+    setNotice(null)
 
     const validOptions = options.filter(o => o.label.trim())
     if (validOptions.length < 2) {
@@ -101,7 +104,29 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
     onCreated?.()
   }
 
+  async function handleResetPoll() {
+    if (!isEditing) return
+    if (!confirm(`Reset "${initialPoll.title}" and clear all votes? Fans will be able to vote again.`)) {
+      return
+    }
+
+    setResetting(true)
+    setError(null)
+    setNotice(null)
+
+    try {
+      await adminAction('reset_poll', { pollId: initialPoll.id })
+      await onReset?.()
+      setNotice('Votes cleared. Fans can vote again.')
+    } catch (err) {
+      setError(err.message || 'Unable to reset the poll.')
+    } finally {
+      setResetting(false)
+    }
+  }
+
   const isReaction = type === 'reaction'
+  const isBusy = submitting || resetting
   const inputClass = "w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
 
   return (
@@ -211,11 +236,22 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
       </div>
 
       {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
+      {notice && <p className="text-loco-green text-sm mt-3">{notice}</p>}
 
       <div className="flex gap-2 mt-5">
+        {isEditing && (
+          <button
+            type="button"
+            onClick={handleResetPoll}
+            disabled={isBusy}
+            className="bg-red-900/30 hover:bg-red-900/50 border border-red-700/60 text-red-300 font-medium rounded-xl px-4 py-3 transition-all disabled:opacity-50"
+          >
+            {resetting ? 'Resetting...' : 'Reset Poll'}
+          </button>
+        )}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={isBusy}
           className="flex-1 bg-loco-purple hover:bg-loco-purple-dark active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all disabled:opacity-50 border border-loco-purple"
         >
           {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Poll'}
@@ -223,6 +259,7 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
         <button
           type="button"
           onClick={onCancel}
+          disabled={isBusy}
           className="flex-1 bg-loco-purple-dark hover:bg-loco-purple text-loco-light/60 font-medium rounded-xl py-3 transition-all border border-loco-purple"
         >
           Cancel
