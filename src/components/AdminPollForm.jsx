@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { adminAction } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabaseClient'
 
 const POLL_TYPES = [
   { value: 'prediction', label: 'Match Prediction' },
@@ -76,20 +76,30 @@ export default function AdminPollForm({ onCreated, onCancel, initialPoll }) {
       }))
 
       if (isEditing) {
-        await adminAction('update_poll', {
-          pollId: initialPoll.id,
-          title: title.trim(),
-          description: description.trim() || null,
-          type,
-          options: opts,
-        })
+        const { error: pollError } = await supabase
+          .from('polls')
+          .update({ title: title.trim(), description: description.trim() || null, type })
+          .eq('id', initialPoll.id)
+        if (pollError) throw pollError
+
+        const { error: delError } = await supabase.from('options').delete().eq('poll_id', initialPoll.id)
+        if (delError) throw delError
+
+        const { error: optError } = await supabase.from('options').insert(
+          opts.map((o, i) => ({ poll_id: initialPoll.id, ...o, sort_order: i }))
+        )
+        if (optError) throw optError
       } else {
-        await adminAction('create_poll', {
-          title: title.trim(),
-          description: description.trim() || null,
-          type,
-          options: opts,
-        })
+        const { data: poll, error: pollError } = await supabase
+          .from('polls')
+          .insert({ title: title.trim(), description: description.trim() || null, type, status: 'closed' })
+          .select().single()
+        if (pollError) throw pollError
+
+        const { error: optError } = await supabase.from('options').insert(
+          opts.map((o, i) => ({ poll_id: poll.id, ...o, sort_order: i }))
+        )
+        if (optError) throw optError
       }
     } catch (err) {
       setError(err.message || 'Something went wrong.')

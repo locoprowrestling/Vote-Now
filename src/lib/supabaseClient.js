@@ -11,14 +11,3 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder'
 )
-
-// Call the admin-action Edge Function — service key never touches the browser
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD
-
-export async function adminAction(action, payload) {
-  const { data, error } = await supabase.functions.invoke('admin-action', {
-    body: { adminPassword: ADMIN_PASSWORD, action, payload },
-  })
-  if (error) throw error
-  return data
-}

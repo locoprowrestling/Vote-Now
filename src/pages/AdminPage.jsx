@@ -4,7 +4,7 @@ import AdminPollForm from '../components/AdminPollForm'
 import AdminPollList from '../components/AdminPollList'
 import { usePolls } from '../hooks/usePolls'
 
-function AdminDashboard() {
+function AdminDashboard({ onSignOut }) {
   const { polls, loading, refetch } = usePolls({ adminView: true })
   const [showForm, setShowForm] = useState(false)
 
@@ -15,7 +15,6 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-black px-4 pb-10">
-      {/* Header */}
       <div className="flex items-center justify-between py-5 border-b border-gray-800 mb-5">
         <div>
           <div className="text-red-500 font-black text-lg tracking-tight uppercase">
@@ -26,10 +25,7 @@ function AdminDashboard() {
           </div>
         </div>
         <button
-          onClick={() => {
-            sessionStorage.removeItem('admin_authed')
-            window.location.reload()
-          }}
+          onClick={onSignOut}
           className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
         >
           Sign out
@@ -68,7 +64,7 @@ function AdminDashboard() {
 export default function AdminPage() {
   return (
     <PasswordGate>
-      <AdminDashboard />
+      {({ onSignOut }) => <AdminDashboard onSignOut={onSignOut} />}
     </PasswordGate>
   )
 }
