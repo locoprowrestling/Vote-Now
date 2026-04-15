@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { submitMailingListSignup } from '../lib/supabaseClient'
 import {
-  clearEmailSubmitted,
   getSessionId,
   getSubmittedEmail,
   getSubmittedMailingListPreference,
@@ -18,6 +17,23 @@ export default function MailingListSignup({ onSubmit } = {}) {
   const [submittedDuplicate, setSubmittedDuplicate] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+
+  function handleDuplicateSignup(normalizedEmail) {
+    const savedEmail = getSubmittedEmail()
+
+    if (savedEmail) {
+      setSubmittedEmail(savedEmail)
+      setSubmittedToMailingList(getSubmittedMailingListPreference())
+    } else {
+      recordEmailSubmitted(normalizedEmail, mailingList)
+      setSubmittedEmail(normalizedEmail)
+      setSubmittedToMailingList(Boolean(mailingList))
+    }
+    setSubmittedDuplicate(true)
+    setSubmitted(true)
+    setSubmitting(false)
+    onSubmit?.()
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -37,21 +53,20 @@ export default function MailingListSignup({ onSubmit } = {}) {
       setSubmitted(true)
       setSubmitting(false)
       onSubmit?.()
-    } catch {
+    } catch (submitError) {
+      const message = String(submitError?.message || '')
+      if (
+        submitError?.code === '23505' ||
+        message.includes('voter_emails_session_id_key') ||
+        message.toLowerCase().includes('duplicate key value')
+      ) {
+        handleDuplicateSignup(normalizedEmail)
+        return
+      }
+
       setError('Something went wrong. Please try again.')
       setSubmitting(false)
     }
-  }
-
-  function handleUseDifferentEmail() {
-    clearEmailSubmitted()
-    setSubmitted(false)
-    setSubmittedEmail('')
-    setSubmittedToMailingList(true)
-    setSubmittedDuplicate(false)
-    setEmail('')
-    setMailingList(true)
-    setError(null)
   }
 
   if (submitted) {
@@ -64,18 +79,11 @@ export default function MailingListSignup({ onSubmit } = {}) {
           </p>
           <p className="text-sm text-loco-light/50 mt-1">
             {submittedDuplicate
-              ? 'This browser session was already signed up.'
+              ? 'This browser session is already signed up.'
               : submittedToMailingList
               ? `We'll reach out at ${submittedEmail} before the next event.`
               : `We saved ${submittedEmail}. Turn the mailing list option on if you want event updates.`}
           </p>
-          <button
-            type="button"
-            onClick={handleUseDifferentEmail}
-            className="mt-3 text-xs text-loco-gold hover:text-loco-gold-dark transition-colors"
-          >
-            Use a different email
-          </button>
         </div>
       </div>
     )

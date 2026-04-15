@@ -22,14 +22,6 @@ function storageSet(key, value) {
   }
 }
 
-function storageRemove(key) {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    memStore.delete(key)
-  }
-}
-
 export function getSessionId() {
   let id = storageGet(SESSION_KEY)
   if (!id) {
@@ -66,10 +58,4 @@ export function recordEmailSubmitted(email, mailingList) {
   storageSet(MAILING_LIST_JOINED_KEY, 'true')
   storageSet(MAILING_LIST_EMAIL_KEY, normalizedEmail)
   storageSet(MAILING_LIST_OPT_IN_KEY, mailingList ? 'true' : 'false')
-}
-
-export function clearEmailSubmitted() {
-  storageRemove(MAILING_LIST_JOINED_KEY)
-  storageRemove(MAILING_LIST_EMAIL_KEY)
-  storageRemove(MAILING_LIST_OPT_IN_KEY)
 }

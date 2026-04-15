@@ -17,6 +17,17 @@ export const supabase = createClient(
 let _adminPassword = ''
 let _submitEmailFunctionAvailable = true
 
+function isDuplicateMailingListSignupError(error, status) {
+  const message = String(error?.message || '')
+  return (
+    error?.code === '23505' ||
+    status === 409 ||
+    error?.status === 409 ||
+    message.includes('voter_emails_session_id_key') ||
+    message.toLowerCase().includes('duplicate key value')
+  )
+}
+
 export function setAdminPassword(pw) {
   _adminPassword = pw
 }
@@ -45,12 +56,12 @@ export async function submitMailingListSignup(session_id, email, mailing_list) {
     }
   }
 
-  const { error } = await supabase
+  const { error, status } = await supabase
     .from('voter_emails')
     .insert({ session_id, email, mailing_list })
 
   if (error) {
-    if (error.code === '23505' || error.status === 409) {
+    if (isDuplicateMailingListSignupError(error, status)) {
       return { ok: true, email, mailing_list, duplicate: true }
     }
 
