@@ -29,11 +29,23 @@ export async function submitVote(poll_id, option_id, session_id, turnstileToken)
 }
 
 export async function submitMailingListSignup(session_id, email, mailing_list) {
-  const { data, error } = await supabase.functions.invoke('submit-email', {
-    body: { session_id, email, mailing_list },
-  })
-  if (error) throw error
-  return data
+  try {
+    const { data, error } = await supabase.functions.invoke('submit-email', {
+      body: { session_id, email, mailing_list },
+    })
+    if (error) throw error
+    return data
+  } catch (invokeError) {
+    const { error } = await supabase
+      .from('voter_emails')
+      .insert({ session_id, email, mailing_list })
+
+    if (error) {
+      error.cause = invokeError
+      throw error
+    }
+    return { ok: true, email, mailing_list }
+  }
 }
 
 export async function adminAction(action, payload = {}) {
