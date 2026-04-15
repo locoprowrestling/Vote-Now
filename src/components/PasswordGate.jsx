@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { setAdminPassword } from '../lib/supabaseClient'
 
 export default function PasswordGate({ children }) {
   const [authed, setAuthed] = useState(false)
@@ -8,6 +9,7 @@ export default function PasswordGate({ children }) {
   function handleLogin(e) {
     e.preventDefault()
     if (password === import.meta.env.VITE_ADMIN_PASSWORD) {
+      setAdminPassword(password)
       setAuthed(true)
     } else {
       setError('Incorrect password')

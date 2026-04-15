@@ -12,10 +12,18 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder'
 )
 
+// Set by PasswordGate on successful login so Edge Function calls use the
+// same password the admin typed, not a potentially-mismatched build env var.
+let _adminPassword = ''
+
+export function setAdminPassword(pw) {
+  _adminPassword = pw
+}
+
 export async function adminAction(action, payload = {}) {
   const { data, error } = await supabase.functions.invoke('admin-action', {
     body: {
-      adminPassword: import.meta.env.VITE_ADMIN_PASSWORD,
+      adminPassword: _adminPassword,
       action,
       payload,
     },
