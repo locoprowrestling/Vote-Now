@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { getSessionId, hasSubmittedEmail, recordEmailSubmitted } from '../lib/localVotes'
 
-export default function MailingListSignup() {
+export default function MailingListSignup({ onSubmit } = {}) {
   const [submitted, setSubmitted] = useState(() => hasSubmittedEmail())
   const [email, setEmail] = useState('')
   const [mailingList, setMailingList] = useState(true)
@@ -29,6 +29,7 @@ export default function MailingListSignup() {
     recordEmailSubmitted()
     setSubmitted(true)
     setSubmitting(false)
+    onSubmit?.()
   }
 
   if (submitted) {

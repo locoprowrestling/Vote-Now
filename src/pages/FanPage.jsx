@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { usePolls } from '../hooks/usePolls'
 import PollCard from '../components/PollCard'
 import MailingListSignup from '../components/MailingListSignup'
+import { hasSubmittedEmail } from '../lib/localVotes'
 
 export default function FanPage() {
   const { polls, loading } = usePolls()
+  const [emailSubmitted, setEmailSubmitted] = useState(() => hasSubmittedEmail())
 
   return (
     <div className="min-h-screen bg-loco-purple-dark px-4 pb-10">
@@ -19,7 +22,7 @@ export default function FanPage() {
         </div>
       </div>
 
-      <MailingListSignup />
+      {!emailSubmitted && <MailingListSignup onSubmit={() => setEmailSubmitted(true)} />}
 
       {loading ? (
         <div className="flex justify-center pt-16">
@@ -38,6 +41,8 @@ export default function FanPage() {
           ))}
         </div>
       )}
+
+      {emailSubmitted && <MailingListSignup />}
     </div>
   )
 }
