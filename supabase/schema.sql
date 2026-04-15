@@ -87,7 +87,8 @@ create table voter_emails (
   session_id   text not null unique,
   email        text not null,
   mailing_list boolean not null default false,
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  removed_at   timestamptz default null
 );
 
 alter table voter_emails enable row level security;

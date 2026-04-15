@@ -7,6 +7,7 @@ export default function AdminMailingList() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const [open, setOpen] = useState(false)
+  const [removing, setRemoving] = useState(null)
 
   useEffect(() => {
     adminAction('get_mailing_list')
@@ -14,6 +15,18 @@ export default function AdminMailingList() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
+
+  async function removeEmail(id) {
+    setRemoving(id)
+    try {
+      await adminAction('remove_from_mailing_list', { id })
+      setEmails(prev => prev.filter(r => r.id !== id))
+    } catch {
+      // silent — row stays visible, user can retry
+    } finally {
+      setRemoving(null)
+    }
+  }
 
   async function copyEmails() {
     const text = emails.map(r => r.email).join('\n')
@@ -60,9 +73,17 @@ export default function AdminMailingList() {
                 </button>
               </div>
               <div className="space-y-1 max-h-64 overflow-y-auto">
-                {emails.map((row, i) => (
-                  <div key={i} className="text-sm text-loco-light/70 py-1 border-b border-loco-purple/50 last:border-0">
-                    {row.email}
+                {emails.map((row) => (
+                  <div key={row.id} className="flex items-center justify-between py-1 border-b border-loco-purple/50 last:border-0">
+                    <span className="text-sm text-loco-light/70">{row.email}</span>
+                    <button
+                      onClick={() => removeEmail(row.id)}
+                      disabled={removing === row.id}
+                      className="ml-2 text-loco-light/30 hover:text-red-400 transition-colors text-xs px-1.5 disabled:opacity-40"
+                      title="Remove from mailing list"
+                    >
+                      {removing === row.id ? '…' : '×'}
+                    </button>
                   </div>
                 ))}
               </div>

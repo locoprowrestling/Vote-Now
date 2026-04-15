@@ -123,11 +123,21 @@ Deno.serve(async (req) => {
     } else if (action === 'get_mailing_list') {
       const { data, error } = await supabase
         .from('voter_emails')
-        .select('email, mailing_list, created_at')
+        .select('id, email, mailing_list, created_at')
         .eq('mailing_list', true)
+        .is('removed_at', null)
         .order('created_at', { ascending: false })
       if (error) throw error
       result = data
+
+    } else if (action === 'remove_from_mailing_list') {
+      const { id } = payload
+      const { error } = await supabase
+        .from('voter_emails')
+        .update({ removed_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+      result = { success: true }
 
     } else {
       return new Response(JSON.stringify({ error: 'Unknown action' }), {
