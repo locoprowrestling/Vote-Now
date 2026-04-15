@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { adminAction } from '../lib/supabaseClient'
 import { useVoteCounts } from '../hooks/useVoteCounts'
 import AdminPollForm from './AdminPollForm'
 
@@ -11,29 +11,23 @@ function PollRow({ poll, onRefetch }) {
 
   async function toggleStatus() {
     const newStatus = poll.status === 'open' ? 'closed' : 'open'
-    await supabase.from('polls').update({ status: newStatus }).eq('id', poll.id)
+    await adminAction('toggle_status', { pollId: poll.id, status: newStatus })
     onRefetch()
   }
 
   async function deletePoll() {
     if (!confirm(`Delete "${poll.title}"? This cannot be undone.`)) return
-    await supabase.from('polls').delete().eq('id', poll.id)
+    await adminAction('delete_poll', { pollId: poll.id })
     onRefetch()
   }
 
   async function toggleShowResults() {
-    await supabase.from('polls').update({ show_results: !poll.show_results }).eq('id', poll.id)
+    await adminAction('toggle_show_results', { pollId: poll.id, showResults: !poll.show_results })
     onRefetch()
   }
 
   async function copyPoll() {
-    const { data: newPoll, error } = await supabase
-      .from('polls')
-      .insert({ title: poll.title + ' (Copy)', description: poll.description || null, type: poll.type, status: 'closed' })
-      .select().single()
-    if (error) return
-    const optionRows = options.map((o, i) => ({ poll_id: newPoll.id, label: o.label, emoji: o.emoji || null, sort_order: i }))
-    await supabase.from('options').insert(optionRows)
+    await adminAction('copy_poll', { pollId: poll.id })
     onRefetch()
   }
 

@@ -114,6 +114,12 @@ Deno.serve(async (req) => {
       if (optError) throw optError
       result = newPoll
 
+    } else if (action === 'toggle_show_results') {
+      const { pollId, showResults } = payload
+      const { error } = await supabase.from('polls').update({ show_results: showResults }).eq('id', pollId)
+      if (error) throw error
+      result = { success: true }
+
     } else if (action === 'get_mailing_list') {
       const { data, error } = await supabase
         .from('voter_emails')
