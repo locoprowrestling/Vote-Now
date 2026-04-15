@@ -114,6 +114,15 @@ Deno.serve(async (req) => {
       if (optError) throw optError
       result = newPoll
 
+    } else if (action === 'get_mailing_list') {
+      const { data, error } = await supabase
+        .from('voter_emails')
+        .select('email, mailing_list, created_at')
+        .eq('mailing_list', true)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      result = data
+
     } else {
       return new Response(JSON.stringify({ error: 'Unknown action' }), {
         status: 400,

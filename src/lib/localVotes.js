@@ -16,3 +16,11 @@ export function hasVoted(pollId) {
 export function recordVote(pollId) {
   localStorage.setItem(`voted_${pollId}`, '1')
 }
+
+export function hasSubmittedEmail() {
+  return !!localStorage.getItem('vote-now:email-submitted')
+}
+
+export function recordEmailSubmitted() {
+  localStorage.setItem('vote-now:email-submitted', 'true')
+}

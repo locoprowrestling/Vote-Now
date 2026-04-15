@@ -11,3 +11,15 @@ export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder'
 )
+
+export async function adminAction(action, payload = {}) {
+  const { data, error } = await supabase.functions.invoke('admin-action', {
+    body: {
+      adminPassword: import.meta.env.VITE_ADMIN_PASSWORD,
+      action,
+      payload,
+    },
+  })
+  if (error) throw error
+  return data
+}

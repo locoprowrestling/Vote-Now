@@ -13,7 +13,7 @@ export function usePolls({ adminView = false } = {}) {
       .order('created_at', { ascending: false })
 
     if (!adminView) {
-      query = query.eq('status', 'open')
+      query = query.or('status.eq.open,show_results.eq.true')
     }
 
     const { data, error } = await query

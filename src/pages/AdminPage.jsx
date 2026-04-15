@@ -2,6 +2,7 @@ import { useState } from 'react'
 import PasswordGate from '../components/PasswordGate'
 import AdminPollForm from '../components/AdminPollForm'
 import AdminPollList from '../components/AdminPollList'
+import AdminMailingList from '../components/AdminMailingList'
 import { usePolls } from '../hooks/usePolls'
 
 function AdminDashboard({ onSignOut }) {
@@ -56,6 +57,10 @@ function AdminDashboard({ onSignOut }) {
         ) : (
           <AdminPollList polls={polls} onRefetch={refetch} />
         )}
+
+        <div className="mt-6">
+          <AdminMailingList />
+        </div>
       </div>
     </div>
   )

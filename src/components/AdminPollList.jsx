@@ -21,6 +21,11 @@ function PollRow({ poll, onRefetch }) {
     onRefetch()
   }
 
+  async function toggleShowResults() {
+    await supabase.from('polls').update({ show_results: !poll.show_results }).eq('id', poll.id)
+    onRefetch()
+  }
+
   async function copyPoll() {
     const { data: newPoll, error } = await supabase
       .from('polls')
@@ -110,6 +115,16 @@ function PollRow({ poll, onRefetch }) {
           className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 rounded-xl text-sm transition-all active:scale-[0.98]"
         >
           Copy
+        </button>
+        <button
+          onClick={toggleShowResults}
+          className={`px-4 py-2.5 border rounded-xl text-sm transition-all active:scale-[0.98] ${
+            poll.show_results
+              ? 'bg-blue-900/40 border-blue-700 text-blue-300 hover:bg-blue-900/60'
+              : 'bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300'
+          }`}
+        >
+          {poll.show_results ? 'Hide Results' : 'Show Results'}
         </button>
         <button
           onClick={deletePoll}

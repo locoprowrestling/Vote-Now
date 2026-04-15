@@ -6,15 +6,16 @@
 -- ============================================================
 
 create table polls (
-  id          uuid primary key default gen_random_uuid(),
-  title       text not null,
-  description text,
-  type        text not null default 'custom'
-                check (type in ('prediction', 'favorite', 'custom', 'reaction')),
-  status      text not null default 'closed'
-                check (status in ('open', 'closed')),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  id           uuid primary key default gen_random_uuid(),
+  title        text not null,
+  description  text,
+  type         text not null default 'custom'
+                 check (type in ('prediction', 'favorite', 'custom', 'reaction')),
+  status       text not null default 'closed'
+                 check (status in ('open', 'closed')),
+  show_results boolean not null default false,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
 );
 
 create table options (
@@ -76,6 +77,25 @@ create policy "options_select" on options for select to anon using (true);
 
 -- Public can insert votes (unique constraint enforces 1 per session per poll)
 create policy "votes_insert" on votes for insert to anon with check (true);
+
+-- ============================================================
+-- EMAIL OPT-IN (one row per browser session)
+-- ============================================================
+
+create table voter_emails (
+  id           uuid primary key default gen_random_uuid(),
+  session_id   text not null unique,
+  email        text not null,
+  mailing_list boolean not null default false,
+  created_at   timestamptz not null default now()
+);
+
+alter table voter_emails enable row level security;
+
+-- Fans can insert their email; individual rows are never exposed to anon
+create policy "voter_emails_insert" on voter_emails for insert to anon with check (true);
+
+grant insert on voter_emails to anon;
 
 -- ============================================================
 -- REALTIME
