@@ -15,6 +15,7 @@ export const supabase = createClient(
 // Set by PasswordGate on successful login so Edge Function calls use the
 // same password the admin typed, not a potentially-mismatched build env var.
 let _adminPassword = ''
+let _submitEmailFunctionAvailable = true
 
 export function setAdminPassword(pw) {
   _adminPassword = pw
@@ -29,23 +30,37 @@ export async function submitVote(poll_id, option_id, session_id, turnstileToken)
 }
 
 export async function submitMailingListSignup(session_id, email, mailing_list) {
-  try {
-    const { data, error } = await supabase.functions.invoke('submit-email', {
-      body: { session_id, email, mailing_list },
-    })
-    if (error) throw error
-    return data
-  } catch (invokeError) {
-    const { error } = await supabase
-      .from('voter_emails')
-      .insert({ session_id, email, mailing_list })
+  let invokeError = null
 
-    if (error) {
-      error.cause = invokeError
-      throw error
+  if (_submitEmailFunctionAvailable) {
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-email', {
+        body: { session_id, email, mailing_list },
+      })
+      if (error) throw error
+      return data
+    } catch (error) {
+      invokeError = error
+      _submitEmailFunctionAvailable = false
     }
-    return { ok: true, email, mailing_list }
   }
+
+  const { error } = await supabase
+    .from('voter_emails')
+    .insert({ session_id, email, mailing_list })
+
+  if (error) {
+    if (error.code === '23505' || error.status === 409) {
+      return { ok: true, email, mailing_list, duplicate: true }
+    }
+
+    if (invokeError) {
+      error.cause = invokeError
+    }
+    throw error
+  }
+
+  return { ok: true, email, mailing_list }
 }
 
 export async function adminAction(action, payload = {}) {

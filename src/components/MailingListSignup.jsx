@@ -15,6 +15,7 @@ export default function MailingListSignup({ onSubmit } = {}) {
   const [mailingList, setMailingList] = useState(true)
   const [submittedEmail, setSubmittedEmail] = useState(() => getSubmittedEmail())
   const [submittedToMailingList, setSubmittedToMailingList] = useState(() => getSubmittedMailingListPreference())
+  const [submittedDuplicate, setSubmittedDuplicate] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -28,9 +29,11 @@ export default function MailingListSignup({ onSubmit } = {}) {
 
     try {
       const data = await submitMailingListSignup(getSessionId(), normalizedEmail, mailingList)
-      recordEmailSubmitted(data.email, data.mailing_list)
-      setSubmittedEmail(data.email)
+      const savedEmail = data.email || normalizedEmail
+      recordEmailSubmitted(savedEmail, data.mailing_list)
+      setSubmittedEmail(savedEmail)
       setSubmittedToMailingList(Boolean(data.mailing_list))
+      setSubmittedDuplicate(Boolean(data.duplicate))
       setSubmitted(true)
       setSubmitting(false)
       onSubmit?.()
@@ -45,6 +48,7 @@ export default function MailingListSignup({ onSubmit } = {}) {
     setSubmitted(false)
     setSubmittedEmail('')
     setSubmittedToMailingList(true)
+    setSubmittedDuplicate(false)
     setEmail('')
     setMailingList(true)
     setError(null)
@@ -59,7 +63,9 @@ export default function MailingListSignup({ onSubmit } = {}) {
             {submittedToMailingList ? "You're on the list!" : 'Email saved'}
           </p>
           <p className="text-sm text-loco-light/50 mt-1">
-            {submittedToMailingList
+            {submittedDuplicate
+              ? 'This browser session was already signed up.'
+              : submittedToMailingList
               ? `We'll reach out at ${submittedEmail} before the next event.`
               : `We saved ${submittedEmail}. Turn the mailing list option on if you want event updates.`}
           </p>
