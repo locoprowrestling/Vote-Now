@@ -26,3 +26,5 @@ dist-ssr
 *.sw?
 awesome-design/
 CLAUDE.md
+.mcp.json
+supabase/.temp/
