@@ -41,9 +41,11 @@ export default function PasswordGate({ children }) {
     <div className="min-h-screen bg-loco-purple-dark flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-loco-gold font-black text-2xl tracking-tight uppercase">
-            LoCo Pro Wrestling
-          </div>
+          <img
+            src="img/LoCoPro Primary Mark.png"
+            alt="LoCo Pro Wrestling"
+            className="mx-auto h-20 w-auto object-contain"
+          />
           <div className="text-loco-light/60 text-sm mt-1 tracking-widest uppercase">
             Admin Panel
           </div>

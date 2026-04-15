@@ -17,17 +17,24 @@ function AdminDashboard({ onSignOut }) {
   return (
     <div className="min-h-screen bg-loco-purple-dark px-4 pb-10">
       <div className="flex items-center justify-between py-5 border-b border-loco-purple mb-5">
-        <div>
-          <div className="text-loco-gold font-black text-lg tracking-tight uppercase">
-            LoCo Pro Wrestling
-          </div>
-          <div className="text-loco-light/50 text-xs tracking-widest uppercase">
-            Admin Panel
+        <div className="flex items-center gap-3 min-w-0">
+          <img
+            src="img/LoCoPro Primary Mark.png"
+            alt="LoCo Pro Wrestling"
+            className="h-12 w-auto object-contain shrink-0"
+          />
+          <div className="min-w-0">
+            <div className="text-loco-light/50 text-xs tracking-widest uppercase">
+              LoCo Pro Wrestling
+            </div>
+            <div className="text-loco-gold font-black text-lg tracking-tight uppercase truncate">
+              Admin Dashboard
+            </div>
           </div>
         </div>
         <button
           onClick={onSignOut}
-          className="text-xs text-loco-light/40 hover:text-loco-light/70 transition-colors"
+          className="text-xs text-loco-light/40 hover:text-loco-light/70 transition-colors shrink-0"
         >
           Sign out
         </button>
