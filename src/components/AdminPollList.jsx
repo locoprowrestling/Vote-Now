@@ -26,7 +26,7 @@ function PollRow({ poll, onRefetch }) {
     const ms = new Date(poll.closes_at) - Date.now()
     if (ms <= 0) return
     const id = setTimeout(async () => {
-      await adminAction('toggle_status', { pollId: poll.id, status: 'closed' })
+      await adminAction('toggle_status', { pollId: poll.id, status: 'closed', showResults: true })
       onRefetch()
     }, ms)
     return () => clearTimeout(id)

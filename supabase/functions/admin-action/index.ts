@@ -146,12 +146,13 @@ Deno.serve(async (req) => {
       result = { success: true }
 
     } else if (action === 'toggle_status') {
-      const { pollId, status, closesAt } = payload
+      const { pollId, status, closesAt, showResults } = payload
       const update: Record<string, unknown> = { status }
       if (status === 'open') {
         update.closes_at = closesAt || null
       } else {
         update.closes_at = null
+        if (showResults !== undefined) update.show_results = showResults
       }
       const { error } = await supabase.from('polls').update(update).eq('id', pollId)
       if (error) throw error
