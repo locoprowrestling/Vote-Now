@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { hasVoted, recordVote, getSessionId, hasSubmittedEmail, recordEmailSubmitted } from '../lib/localVotes'
+import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
 import { useVoteCounts } from '../hooks/useVoteCounts'
 import ResultsBar from './ResultsBar'
 
@@ -10,10 +10,6 @@ export default function PollCard({ poll }) {
   const [submitting, setSubmitting] = useState(null)
   const [errorMsg, setErrorMsg] = useState(null)
   const { counts } = useVoteCounts(poll.id)
-
-  const [email, setEmail] = useState('')
-  const [mailingList, setMailingList] = useState(false)
-  const showEmailForm = !voted && !hasSubmittedEmail() && poll.status === 'open'
 
   // Closed poll with show_results — display final results, no voting
   if (poll.status === 'closed') {
@@ -64,13 +60,6 @@ export default function PollCard({ poll }) {
       setVoted(true)
     }
 
-    if (email.trim()) {
-      await supabase.from('voter_emails').upsert(
-        { session_id: getSessionId(), email: email.trim(), mailing_list: mailingList },
-        { onConflict: 'session_id' }
-      )
-    }
-    recordEmailSubmitted()
     setSubmitting(null)
   }
 
@@ -90,28 +79,6 @@ export default function PollCard({ poll }) {
       <h2 className="text-xl font-bold text-white mb-1">{poll.title}</h2>
       {poll.description && (
         <p className="text-sm text-loco-light/60 mb-3">{poll.description}</p>
-      )}
-
-      {/* Email opt-in — shown once per session before first vote */}
-      {showEmailForm && (
-        <div className="mb-4 pb-4 border-b border-loco-purple">
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email (optional)"
-            className="w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-4 py-2.5 text-sm text-white placeholder-loco-light/30 focus:outline-none focus:border-loco-gold transition-colors"
-          />
-          <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={mailingList}
-              onChange={e => setMailingList(e.target.checked)}
-              className="w-4 h-4 accent-loco-gold"
-            />
-            <span className="text-sm text-loco-light/60">I would like to sign up for your mailing list</span>
-          </label>
-        </div>
       )}
 
       {voted ? (

@@ -1,5 +1,6 @@
 import { usePolls } from '../hooks/usePolls'
 import PollCard from '../components/PollCard'
+import MailingListSignup from '../components/MailingListSignup'
 
 export default function FanPage() {
   const { polls, loading } = usePolls()
@@ -35,6 +36,8 @@ export default function FanPage() {
           ))}
         </div>
       )}
+
+      <MailingListSignup />
     </div>
   )
 }

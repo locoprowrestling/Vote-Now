@@ -1,26 +1,45 @@
 const SESSION_KEY = 'vote_session_id'
 
+// In-memory fallback when localStorage is unavailable (e.g. browser blocks all cookies)
+const memStore = new Map()
+
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return memStore.get(key) ?? null
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    memStore.set(key, value)
+  }
+}
+
 export function getSessionId() {
-  let id = localStorage.getItem(SESSION_KEY)
+  let id = storageGet(SESSION_KEY)
   if (!id) {
     id = crypto.randomUUID()
-    localStorage.setItem(SESSION_KEY, id)
+    storageSet(SESSION_KEY, id)
   }
   return id
 }
 
 export function hasVoted(pollId) {
-  return !!localStorage.getItem(`voted_${pollId}`)
+  return !!storageGet(`voted_${pollId}`)
 }
 
 export function recordVote(pollId) {
-  localStorage.setItem(`voted_${pollId}`, '1')
+  storageSet(`voted_${pollId}`, '1')
 }
 
 export function hasSubmittedEmail() {
-  return !!localStorage.getItem('vote-now:email-submitted')
+  return !!storageGet('vote-now:email-submitted')
 }
 
 export function recordEmailSubmitted() {
-  localStorage.setItem('vote-now:email-submitted', 'true')
+  storageSet('vote-now:email-submitted', 'true')
 }
