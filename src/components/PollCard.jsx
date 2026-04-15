@@ -23,7 +23,6 @@ export default function PollCard({ poll }) {
     resetToken: voteResetCount,
   })
   const turnstileRef = useRef(null)
-  const [cfToken, setCfToken] = useState(null)
   const { secondsLeft, expired } = useCountdown(poll.closes_at || null)
 
   useEffect(() => {
@@ -62,13 +61,14 @@ export default function PollCard({ poll }) {
     setErrorMsg(null)
 
     try {
-      await submitVote(poll.id, optionId, getSessionId(), cfToken)
+      const turnstileToken = await getTurnstileToken()
+      await submitVote(poll.id, optionId, getSessionId(), turnstileToken)
       recordVote(poll.id, voteResetCount)
+      turnstileRef.current?.reset()
       setVoted(true)
     } catch {
       setErrorMsg('Something went wrong. Please try again.')
       turnstileRef.current?.reset()
-      setCfToken(null)
     } finally {
       setSubmitting(null)
     }
@@ -80,16 +80,33 @@ export default function PollCard({ poll }) {
     setSubmitting('text')
     setErrorMsg(null)
     try {
-      await submitTextResponse(poll.id, textInput.trim(), getSessionId(), cfToken)
+      const turnstileToken = await getTurnstileToken()
+      await submitTextResponse(poll.id, textInput.trim(), getSessionId(), turnstileToken)
       recordVote(poll.id, voteResetCount)
+      turnstileRef.current?.reset()
       setVoted(true)
     } catch {
       setErrorMsg('Something went wrong. Please try again.')
       turnstileRef.current?.reset()
-      setCfToken(null)
     } finally {
       setSubmitting(null)
     }
+  }
+
+  async function getTurnstileToken() {
+    const widget = turnstileRef.current
+    if (!widget) {
+      throw new Error('Turnstile widget is not ready')
+    }
+
+    const existingToken = widget.getResponse()
+    if (existingToken && !widget.isExpired()) {
+      return existingToken
+    }
+
+    widget.reset()
+    widget.execute()
+    return widget.getResponsePromise()
   }
 
   const votingBlocked = voted || expired
@@ -119,8 +136,7 @@ export default function PollCard({ poll }) {
       <Turnstile
         ref={turnstileRef}
         siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-        onSuccess={setCfToken}
-        options={{ size: 'invisible' }}
+        options={{ size: 'invisible', execution: 'execute', appearance: 'execute' }}
       />
 
       {voted ? (
