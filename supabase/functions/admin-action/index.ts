@@ -218,6 +218,12 @@ Deno.serve(async (req) => {
         .eq('poll_id', pollId)
       if (deleteVotesError) throw deleteVotesError
 
+      const { error: deleteTextError } = await supabase
+        .from('text_responses')
+        .delete()
+        .eq('poll_id', pollId)
+      if (deleteTextError) throw deleteTextError
+
       const { error: updatePollError } = await supabase
         .from('polls')
         .update({ vote_reset_count: (poll.vote_reset_count || 0) + 1 })
@@ -240,6 +246,16 @@ Deno.serve(async (req) => {
       const { error: e2 } = await supabase.from('polls').update({ sort_order: a.sort_order }).eq('id', swapWithId)
       if (e2) throw e2
       result = { success: true }
+
+    } else if (action === 'get_text_responses') {
+      const { pollId } = payload
+      const { data, error } = await supabase
+        .from('text_responses')
+        .select('id, response, created_at')
+        .eq('poll_id', pollId)
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      result = data
 
     } else if (action === 'get_mailing_list') {
       const { data, error } = await supabase

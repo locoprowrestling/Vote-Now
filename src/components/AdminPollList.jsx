@@ -6,9 +6,18 @@ import AdminPollForm from './AdminPollForm'
 
 function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
   const options = [...(poll.options || [])].sort((a, b) => a.sort_order - b.sort_order)
+  const isText = poll.type === 'text'
   const { counts } = useVoteCounts(poll.id, poll.vote_reset_count)
   const totalVotes = Object.values(counts).reduce((s, n) => s + n, 0)
   const [editing, setEditing] = useState(false)
+  const [responses, setResponses] = useState(null)
+  const [showResponses, setShowResponses] = useState(false)
+
+  async function loadResponses() {
+    const data = await adminAction('get_text_responses', { pollId: poll.id })
+    setResponses(data)
+    setShowResponses(true)
+  }
 
   // Timer panel state (shown when admin taps "Open Voting")
   const [openingWithTimer, setOpeningWithTimer] = useState(false)
@@ -111,26 +120,51 @@ function PollRow({ poll, onRefetch, onMoveUp, onMoveDown }) {
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-white font-bold">{totalVotes}</div>
-          <div className="text-xs text-loco-light/40">votes</div>
+          <div className="text-white font-bold">{isText ? (responses?.length ?? '—') : totalVotes}</div>
+          <div className="text-xs text-loco-light/40">{isText ? 'responses' : 'votes'}</div>
         </div>
       </div>
 
-      {/* Options breakdown */}
-      <div className="mt-3 space-y-1">
-        {options.map(opt => {
-          const count = counts[opt.id] || 0
-          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
-          return (
-            <div key={opt.id} className="flex items-center gap-2 text-sm">
-              <span className="text-loco-light/60 w-4 text-center">{opt.emoji || ''}</span>
-              <span className="text-loco-light/80 flex-1 truncate">{opt.label}</span>
-              <span className="text-loco-light/50 text-xs w-8 text-right">{pct}%</span>
-              <span className="text-loco-light/40 text-xs w-10 text-right">{count}v</span>
+      {/* Options breakdown / text responses */}
+      {isText ? (
+        <div className="mt-3">
+          {showResponses ? (
+            <div className="space-y-1">
+              {responses.length === 0 ? (
+                <p className="text-xs text-loco-light/30 italic">No responses yet.</p>
+              ) : (
+                responses.map(r => (
+                  <div key={r.id} className="text-sm text-loco-light/80 bg-loco-purple-dark rounded-lg px-3 py-1.5 truncate">
+                    {r.response}
+                  </div>
+                ))
+              )}
+              <button onClick={() => setShowResponses(false)} className="text-xs text-loco-light/30 hover:text-loco-light/60 mt-1">
+                Hide
+              </button>
             </div>
-          )
-        })}
-      </div>
+          ) : (
+            <button onClick={loadResponses} className="text-xs text-loco-gold hover:text-loco-gold/70 mt-1">
+              View Responses
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 space-y-1">
+          {options.map(opt => {
+            const count = counts[opt.id] || 0
+            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+            return (
+              <div key={opt.id} className="flex items-center gap-2 text-sm">
+                <span className="text-loco-light/60 w-4 text-center">{opt.emoji || ''}</span>
+                <span className="text-loco-light/80 flex-1 truncate">{opt.label}</span>
+                <span className="text-loco-light/50 text-xs w-8 text-right">{pct}%</span>
+                <span className="text-loco-light/40 text-xs w-10 text-right">{count}v</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Inline timer panel (shown when opening) */}
       {openingWithTimer && (

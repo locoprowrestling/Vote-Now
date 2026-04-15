@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
-import { submitVote } from '../lib/supabaseClient'
+import { submitVote, submitTextResponse } from '../lib/supabaseClient'
 import { hasVoted, recordVote, getSessionId } from '../lib/localVotes'
 import { useVoteCounts } from '../hooks/useVoteCounts'
 import { useCountdown, formatCountdown } from '../hooks/useCountdown'
@@ -12,6 +12,7 @@ export default function PollCard({ poll }) {
   const [voted, setVoted] = useState(() => hasVoted(poll.id, voteResetCount))
   const [submitting, setSubmitting] = useState(null)
   const [errorMsg, setErrorMsg] = useState(null)
+  const [textInput, setTextInput] = useState('')
   const { counts } = useVoteCounts(poll.id, voteResetCount)
   const turnstileRef = useRef(null)
   const [cfToken, setCfToken] = useState(null)
@@ -57,7 +58,26 @@ export default function PollCard({ poll }) {
     }
   }
 
+  async function handleTextSubmit(e) {
+    e.preventDefault()
+    if (voted || submitting || !textInput.trim()) return
+    setSubmitting('text')
+    setErrorMsg(null)
+    try {
+      await submitTextResponse(poll.id, textInput.trim(), getSessionId(), cfToken)
+      recordVote(poll.id, voteResetCount)
+      setVoted(true)
+    } catch {
+      setErrorMsg('Something went wrong. Please try again.')
+      turnstileRef.current?.reset()
+      setCfToken(null)
+    } finally {
+      setSubmitting(null)
+    }
+  }
+
   const isReaction = poll.type === 'reaction'
+  const isText = poll.type === 'text'
   const votingBlocked = voted || expired
 
   return (
@@ -68,6 +88,7 @@ export default function PollCard({ poll }) {
           {poll.type === 'favorite' && 'Fan Favorite'}
           {poll.type === 'reaction' && 'Live Reaction'}
           {poll.type === 'custom' && 'Vote Now'}
+          {poll.type === 'text' && 'Your Answer'}
         </span>
       </div>
 
@@ -91,12 +112,30 @@ export default function PollCard({ poll }) {
       {voted ? (
         <>
           <div className="text-sm text-loco-green font-medium mb-2">
-            Your vote is in!
+            {isText ? 'Your answer was recorded — thanks!' : 'Your vote is in!'}
           </div>
-          <ResultsBar options={options} counts={counts} />
+          {!isText && <ResultsBar options={options} counts={counts} />}
         </>
       ) : expired ? (
         <div className="text-sm text-loco-light/40 mt-3 text-center">Voting has closed.</div>
+      ) : isText ? (
+        <form onSubmit={handleTextSubmit} className="mt-3 space-y-2">
+          <input
+            type="text"
+            value={textInput}
+            onChange={e => setTextInput(e.target.value)}
+            placeholder="Type your answer..."
+            disabled={!!submitting}
+            className="w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-4 py-3 text-white placeholder-loco-light/30 focus:outline-none focus:border-loco-gold transition-colors disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={!!submitting || !textInput.trim()}
+            className="w-full bg-loco-green hover:bg-loco-green-dark text-white font-bold rounded-xl py-3 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {submitting ? 'Submitting...' : 'Submit'}
+          </button>
+        </form>
       ) : isReaction ? (
         <div className="flex flex-wrap gap-3 justify-center mt-3">
           {options.map(option => (

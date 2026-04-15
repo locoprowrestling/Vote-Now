@@ -10,7 +10,7 @@ create table polls (
   title        text not null,
   description  text,
   type         text not null default 'custom'
-                 check (type in ('prediction', 'favorite', 'custom', 'reaction')),
+                 check (type in ('prediction', 'favorite', 'custom', 'reaction', 'text')),
   status       text not null default 'closed'
                  check (status in ('open', 'closed')),
   show_results boolean not null default false,
@@ -84,6 +84,33 @@ create policy "votes_insert" on votes for insert to anon
     exists (
       select 1 from polls
       where polls.id = votes.poll_id
+        and polls.status = 'open'
+        and (polls.closes_at is null or polls.closes_at > now())
+    )
+  );
+
+-- ============================================================
+-- TEXT RESPONSES (one row per session per poll)
+-- ============================================================
+
+create table text_responses (
+  id         uuid primary key default gen_random_uuid(),
+  poll_id    uuid not null references polls(id) on delete cascade,
+  session_id text not null,
+  response   text not null,
+  created_at timestamptz not null default now(),
+  unique (poll_id, session_id)
+);
+
+create index text_responses_poll_id on text_responses (poll_id);
+
+alter table text_responses enable row level security;
+
+create policy "text_responses_insert" on text_responses for insert to anon
+  with check (
+    exists (
+      select 1 from polls
+      where polls.id = text_responses.poll_id
         and polls.status = 'open'
         and (polls.closes_at is null or polls.closes_at > now())
     )

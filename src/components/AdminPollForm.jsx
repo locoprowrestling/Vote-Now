@@ -6,6 +6,7 @@ const POLL_TYPES = [
   { value: 'favorite', label: 'Fan Favorite' },
   { value: 'custom', label: 'Custom Poll' },
   { value: 'reaction', label: 'Live Reaction (emoji)' },
+  { value: 'text', label: 'Text Entry' },
 ]
 
 const DEFAULT_REACTION_OPTIONS = [
@@ -44,7 +45,9 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
     setType(newType)
     if (newType === 'reaction') {
       setOptions(DEFAULT_REACTION_OPTIONS.map(o => ({ ...o })))
-    } else if (type === 'reaction') {
+    } else if (newType === 'text') {
+      setOptions([])
+    } else if (type === 'reaction' || type === 'text') {
       setOptions([{ label: '', emoji: '' }, { label: '', emoji: '' }])
     }
   }
@@ -71,7 +74,7 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
     setNotice(null)
 
     const validOptions = options.filter(o => o.label.trim())
-    if (validOptions.length < 2) {
+    if (type !== 'text' && validOptions.length < 2) {
       setError('At least 2 options are required.')
       return
     }
@@ -136,6 +139,7 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
   }
 
   const isReaction = type === 'reaction'
+  const isText = type === 'text'
   const isBusy = submitting || resetting
   const inputClass = "w-full bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
 
@@ -203,59 +207,63 @@ export default function AdminPollForm({ onCreated, onCancel, onReset, initialPol
           />
         </div>
 
-        {/* Options */}
-        <div>
-          <label className="block text-xs text-loco-light/50 mb-2 uppercase tracking-wider">Options</label>
-          <div className="space-y-2">
-            {options.map((opt, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                {isReaction && (
+        {/* Options — hidden for text-entry polls */}
+        {isText ? (
+          <p className="text-xs text-loco-light/40 italic">Fans will type a free-form answer.</p>
+        ) : (
+          <div>
+            <label className="block text-xs text-loco-light/50 mb-2 uppercase tracking-wider">Options</label>
+            <div className="space-y-2">
+              {options.map((opt, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  {isReaction && (
+                    <input
+                      type="text"
+                      value={opt.emoji}
+                      onChange={e => updateOption(i, 'emoji', e.target.value)}
+                      className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
+                      placeholder="😀"
+                    />
+                  )}
                   <input
                     type="text"
-                    value={opt.emoji}
-                    onChange={e => updateOption(i, 'emoji', e.target.value)}
-                    className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
-                    placeholder="😀"
+                    value={opt.label}
+                    onChange={e => updateOption(i, 'label', e.target.value)}
+                    className="flex-1 bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
+                    placeholder={`Option ${i + 1}`}
                   />
-                )}
-                <input
-                  type="text"
-                  value={opt.label}
-                  onChange={e => updateOption(i, 'label', e.target.value)}
-                  className="flex-1 bg-loco-purple-dark border border-loco-purple rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-loco-gold transition-colors"
-                  placeholder={`Option ${i + 1}`}
-                />
-                {!isReaction && (
-                  <input
-                    type="text"
-                    value={opt.emoji}
-                    onChange={e => updateOption(i, 'emoji', e.target.value)}
-                    className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
-                    placeholder="🏆"
-                  />
-                )}
-                {options.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => removeOption(i)}
-                    className="text-loco-light/30 hover:text-red-400 text-lg leading-none px-1"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
+                  {!isReaction && (
+                    <input
+                      type="text"
+                      value={opt.emoji}
+                      onChange={e => updateOption(i, 'emoji', e.target.value)}
+                      className="w-14 bg-loco-purple-dark border border-loco-purple rounded-xl px-2 py-2.5 text-white text-center focus:outline-none focus:border-loco-gold transition-colors"
+                      placeholder="🏆"
+                    />
+                  )}
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(i)}
+                      className="text-loco-light/30 hover:text-red-400 text-lg leading-none px-1"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {!isReaction && (
+              <button
+                type="button"
+                onClick={addOption}
+                className="mt-2 text-sm text-loco-gold hover:text-loco-gold-dark"
+              >
+                + Add option
+              </button>
+            )}
           </div>
-          {!isReaction && (
-            <button
-              type="button"
-              onClick={addOption}
-              className="mt-2 text-sm text-loco-gold hover:text-loco-gold-dark"
-            >
-              + Add option
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {error && <p className="text-red-400 text-sm mt-3">{error}</p>}

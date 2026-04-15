@@ -55,6 +55,14 @@ export async function submitVote(poll_id, option_id, session_id, turnstileToken)
   return data
 }
 
+export async function submitTextResponse(poll_id, text_response, session_id, turnstileToken) {
+  const { data, error } = await supabase.functions.invoke('submit-vote', {
+    body: { poll_id, text_response, session_id, turnstileToken },
+  })
+  if (error) throw error
+  return data
+}
+
 export async function submitMailingListSignup(session_id, email, mailing_list) {
   let invokeError = null
 

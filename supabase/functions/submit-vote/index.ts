@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { poll_id, option_id, session_id, turnstileToken } = await req.json()
+    const { poll_id, option_id, text_response, session_id, turnstileToken } = await req.json()
 
     // Verify Turnstile token with Cloudflare
     const secret = Deno.env.get('TURNSTILE_SECRET_KEY')
@@ -32,25 +32,37 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Insert vote using service role (bypasses RLS)
+    // Insert vote/response using service role (bypasses RLS)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { error } = await supabase
-      .from('votes')
-      .insert({ poll_id, option_id, session_id })
+    let insertError = null
 
-    // Treat duplicate vote (23505) as success — user already voted
-    if (error && error.code !== '23505') {
-      return new Response(JSON.stringify({ error: error.message, code: error.code }), {
+    if (text_response !== undefined) {
+      // Text-entry poll: insert into text_responses
+      const { error } = await supabase
+        .from('text_responses')
+        .insert({ poll_id, session_id, response: text_response })
+      insertError = error
+    } else {
+      // Choice poll: insert into votes
+      const { error } = await supabase
+        .from('votes')
+        .insert({ poll_id, option_id, session_id })
+      insertError = error
+    }
+
+    // Treat duplicate (23505) as success — user already responded
+    if (insertError && insertError.code !== '23505') {
+      return new Response(JSON.stringify({ error: insertError.message, code: insertError.code }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const isDuplicate = error?.code === '23505'
+    const isDuplicate = insertError?.code === '23505'
     return new Response(JSON.stringify({ ok: true, duplicate: isDuplicate }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
