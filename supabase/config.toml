@@ -1,0 +1,8 @@
+[functions.admin-action]
+verify_jwt = false
+
+[functions.submit-email]
+verify_jwt = false
+
+[functions.submit-vote]
+verify_jwt = false
