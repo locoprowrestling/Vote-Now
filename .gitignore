@@ -27,5 +27,6 @@ dist-ssr
 awesome-design/
 CLAUDE.md
 .mcp.json
+.playwright-mcp/
 supabase/.temp/
 .remember/
