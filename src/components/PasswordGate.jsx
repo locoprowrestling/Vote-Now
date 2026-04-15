@@ -1,47 +1,26 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { useState } from 'react'
 
 export default function PasswordGate({ children }) {
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [email, setEmail] = useState('')
+  const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function handleLogin(e) {
+  function handleLogin(e) {
     e.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    setSubmitting(false)
+    if (password === import.meta.env.VITE_ADMIN_PASSWORD) {
+      setAuthed(true)
+    } else {
+      setError('Incorrect password')
+      setPassword('')
+    }
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
+  function handleSignOut() {
+    setAuthed(false)
+    setPassword('')
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (session) return children({ onSignOut: handleSignOut })
+  if (authed) return children({ onSignOut: handleSignOut })
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4">
@@ -60,35 +39,23 @@ export default function PasswordGate({ children }) {
           className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-4"
         >
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              autoFocus
-              required
-              className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 text-base"
-              placeholder="admin@example.com"
-            />
-          </div>
-          <div>
             <label className="block text-sm text-gray-400 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => { setPassword(e.target.value); setError(null) }}
+              autoFocus
               required
               className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 text-base"
-              placeholder="Password"
+              placeholder="Admin password"
             />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all disabled:opacity-50"
+            className="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-xl py-3 transition-all"
           >
-            {submitting ? 'Signing in...' : 'Sign In'}
+            Sign In
           </button>
         </form>
       </div>
