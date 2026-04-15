@@ -19,6 +19,8 @@ export default function FanPage() {
         </div>
       </div>
 
+      <MailingListSignup />
+
       {loading ? (
         <div className="flex justify-center pt-16">
           <div className="w-8 h-8 border-2 border-loco-gold border-t-transparent rounded-full animate-spin" />
@@ -36,8 +38,6 @@ export default function FanPage() {
           ))}
         </div>
       )}
-
-      <MailingListSignup />
     </div>
   )
 }
