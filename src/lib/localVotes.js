@@ -37,9 +37,9 @@ export function recordVote(pollId) {
 }
 
 export function hasSubmittedEmail() {
-  return !!storageGet('vote-now:email-submitted')
+  return !!storageGet('vote-now:mailing-list-joined')
 }
 
 export function recordEmailSubmitted() {
-  storageSet('vote-now:email-submitted', 'true')
+  storageSet('vote-now:mailing-list-joined', 'true')
 }
