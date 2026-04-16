@@ -46,7 +46,18 @@ export default function FanPage() {
         {emailSubmitted && <MailingListSignup />}
 
         <footer className="max-w-lg mx-auto mt-10 px-4 py-4 rounded-2xl border border-loco-purple bg-loco-purple-deep/60 text-center text-sm leading-relaxed text-loco-light/70">
-          <span className="block">Vote-Now&trade; Polling Engine &copy; 2026 LoCo Pro Wrestling LLC.</span>
+          <span className="block">
+            Vote-Now&trade; Polling Engine &copy; 2026{' '}
+            <a
+              href="https://www.locopro.pw"
+              target="_blank"
+              rel="noreferrer"
+              className="text-loco-gold hover:text-loco-gold-dark underline underline-offset-2"
+            >
+              LoCo Pro Wrestling LLC
+            </a>
+            .
+          </span>
           <span className="block">All rights reserved.</span>
         </footer>
       </div>
